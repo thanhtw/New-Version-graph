@@ -157,31 +157,65 @@
     <div id="review-graph"></div>
   </div>
 
-  <!-- Section: Bubble Chart -->
-  <h2 class="section-title">📈 Multi-Dimensional Quality Matrix</h2>
+  <!-- Section: Student Review Summary -->
+  <h2 class="section-title">📝 Student Review Summary</h2>
   <div class="section-description">
-    <strong>Bubble Chart Overview:</strong> A comprehensive view of all students' review quality across multiple dimensions.<br><br>
-    <strong>X-Axis (Quality Indicators):</strong><br>
-    • <strong>Relevance</strong> – Does the feedback address the actual code/assignment?<br>
-    • <strong>Concreteness</strong> – Is the feedback specific with actionable details?<br>
-    • <strong>Constructive</strong> – Does the feedback provide helpful suggestions for improvement?<br>
-    • <strong>Overall</strong> – Average score across all three metrics.<br><br>
-    <strong>Y-Axis:</strong> Individual students (sorted by overall performance).<br>
-    <strong>Bubble Size:</strong> Review participation rate (larger = higher engagement).<br>
-    <strong>Bubble Color:</strong> Label proportion intensity (darker = higher quality ratio).<br><br>
-    <span class="note-text">Note: Individual label ratios may exceed 100% since a single review can contain multiple quality labels simultaneously.</span>
-  </div>
-    
-  <!-- Export Controls -->
-  <div class="export-controls">
-      <button id="exportBubblePng" class="export-btn">💾 Export as PNG</button>
-      <button id="exportBubbleHighRes" class="export-btn">📸 Export High Resolution</button>
+    <strong>Review Summary:</strong> Browse and search all student review comments organized by homework assignment.<br>
+    <strong>Filter by Student:</strong> Select a student to view all their review comments.<br>
+    <strong>Quality Labels:</strong> 
+    <span class="label-tag relevance">R</span> Relevance | 
+    <span class="label-tag concreteness">C</span> Concreteness | 
+    <span class="label-tag constructive">S</span> Constructive
   </div>
   
-  <!-- Bubble Chart -->
-  <div class="bubble-chart-section">
-    <div class="bubble-chart-container">
-      <canvas id="bubbleChart"></canvas>
+  <!-- Search and Filter Controls -->
+  <div class="student-summary-section">
+    <div class="summary-controls">
+      <div class="search-box">
+        <input type="text" id="studentSearch" placeholder="Search student ID..." />
+      </div>
+      <div class="filter-group">
+        <select id="hwFilter">
+          <option value="all">All Assignments</option>
+        </select>
+        <select id="sortBy">
+          <option value="name">Sort by Name</option>
+          <option value="reviews">Sort by Review Count</option>
+          <option value="participation">Sort by Participation Rate</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- Summary Statistics -->
+    <div class="summary-stats" id="summaryStats">
+      <div class="stat-card primary">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="totalStudents">0</div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-icon">📝</div>
+        <div class="stat-value" id="totalReviews">0</div>
+        <div class="stat-label">Total Reviews</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value" id="avgParticipation">0%</div>
+        <div class="stat-label">Avg Participation</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value" id="avgQuality">0%</div>
+        <div class="stat-label">Avg Quality Score</div>
+      </div>
+    </div>
+    
+    <!-- Student Review List -->
+    <div class="student-summary-container" id="studentSummaryContainer">
+      <div class="loading-placeholder" style="text-align: center; padding: 40px; color: #666;">
+        <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+        Loading student data...
+      </div>
     </div>
   </div>
 
@@ -194,7 +228,6 @@
     let currentMode = 'all';
     let rawData = null;
     let currentHW = [];
-    let bubbleChartManager = null;
 
     // Color configuration for 4 levels (same as original)
     const colorConfig = {
@@ -326,98 +359,289 @@
         }
 
         generateGraph(rawData, mode, hwNames);
-        updateBubbleChart(hwNames);
     }
 
     // Make globally accessible
     window.updateGraphMode = updateGraphMode;
 
-    // Prepare network data for bubble chart
-    function prepareNetworkDataForBubbleChart(hwNames) {
-        if (!rawData) return null;
-        const studentData = new Map();
+    // ========================================
+    // Student Review Summary Functions
+    // ========================================
+    
+    // Store all student data for filtering
+    let allStudentSummaryData = [];
+    
+    // Render Student Review Summary
+    function renderStudentSummary(data, hwKeys) {
+        const container = document.getElementById('studentSummaryContainer');
+        if (!container) return;
         
-        hwNames.forEach(hwName => {
-            const hwData = rawData[hwName] || [];
+        // Collect all student data
+        const studentMap = new Map();
+        
+        hwKeys.forEach(hwName => {
+            const hwData = data[hwName] || [];
             hwData.forEach(assignment => {
                 const reviewer = assignment.Reviewer_Name || assignment.reviewer;
-                const author = assignment.Author_Name || assignment.author;
+                if (!reviewer) return;
                 
-                [reviewer, author].forEach(studentId => {
-                    if (studentId && !studentData.has(studentId)) {
-                        studentData.set(studentId, {
-                            id: studentId,
-                            name: studentId,
-                            validComments: 0,
-                            validRounds: 0,
-                            assignedTasks: 0,
-                            relevanceCount: 0,
-                            concretenessCount: 0,
-                            constructiveCount: 0
-                        });
-                    }
-                });
+                if (!studentMap.has(reviewer)) {
+                    studentMap.set(reviewer, {
+                        id: reviewer,
+                        reviews: {},
+                        totalReviews: 0,
+                        assignedTasks: 0,
+                        completedTasks: 0,
+                        labels: { relevance: 0, concreteness: 0, constructive: 0 }
+                    });
+                }
                 
-                if (reviewer && studentData.has(reviewer)) {
-                    const reviewerData = studentData.get(reviewer);
-                    reviewerData.assignedTasks++;
-                    
+                const student = studentMap.get(reviewer);
+                
+                // Initialize homework entry if not exists
+                if (!student.reviews[hwName]) {
+                    student.reviews[hwName] = [];
+                }
+                
+                student.assignedTasks++;
+                
+                // Process rounds
+                if (assignment.Round && assignment.Round.length > 0) {
                     let hasValidFeedback = false;
-                    let validRoundsCount = 0;
-                    
-                    if (assignment.Round && assignment.Round.length > 0) {
-                        assignment.Round.forEach(round => {
-                            if (round.Feedback && round.Feedback.trim() !== "") {
-                                hasValidFeedback = true;
-                                validRoundsCount++;
-                                if (round.Relevance === 1) reviewerData.relevanceCount++;
-                                if (round.Concreteness === 1) reviewerData.concretenessCount++;
-                                if (round.Constructive === 1) reviewerData.constructiveCount++;
-                            }
-                        });
-                    }
-                    
-                    if (hasValidFeedback) reviewerData.validComments++;
-                    reviewerData.validRounds += validRoundsCount;
+                    assignment.Round.forEach(round => {
+                        const feedback = round.Feedback || round.feedback || "";
+                        if (feedback.trim()) {
+                            hasValidFeedback = true;
+                            student.totalReviews++;
+                            
+                            // Get labels
+                            const relevance = round.Relevance || round.relevance || 0;
+                            const concreteness = round.Concreteness || round.concreteness || 0;
+                            const constructive = round.Constructive || round.constructive || 0;
+                            
+                            if (relevance === 1) student.labels.relevance++;
+                            if (concreteness === 1) student.labels.concreteness++;
+                            if (constructive === 1) student.labels.constructive++;
+                            
+                            student.reviews[hwName].push({
+                                author: assignment.Author_Name || assignment.author || "Unknown",
+                                feedback: feedback,
+                                time: round.Time || round.time || "",
+                                relevance,
+                                concreteness,
+                                constructive
+                            });
+                        }
+                    });
+                    if (hasValidFeedback) student.completedTasks++;
                 }
             });
         });
         
-        const nodes = Array.from(studentData.values()).map(student => ({
-            id: student.id,
-            label: student.name,
-            group: 'student',
-            validComments: student.validComments,
-            validRounds: student.validRounds,
-            assignedTasks: student.assignedTasks,
-            relevanceCount: student.relevanceCount,
-            concretenessCount: student.concretenessCount,
-            constructiveCount: student.constructiveCount
-        }));
+        // Convert to array
+        allStudentSummaryData = Array.from(studentMap.values());
         
-        return { nodes, edges: [] };
+        // Update statistics
+        updateSummaryStats(allStudentSummaryData);
+        
+        // Render student cards
+        renderStudentCards(allStudentSummaryData, hwKeys);
+        
+        // Setup event listeners for filtering
+        setupSummaryFilters(hwKeys);
     }
-
-    // Update bubble chart
-    function updateBubbleChart(hwNames) {
-        if (!rawData || !bubbleChartManager) return;
-        try {
-            const networkData = prepareNetworkDataForBubbleChart(hwNames);
-            if (networkData) {
-                bubbleChartManager.updateData(networkData);
-            }
-        } catch (error) {
-            console.error("Error updating bubble chart:", error);
+    
+    // Update summary statistics
+    function updateSummaryStats(students) {
+        const totalStudents = students.length;
+        const totalReviews = students.reduce((sum, s) => sum + s.totalReviews, 0);
+        const avgParticipation = totalStudents > 0 
+            ? students.reduce((sum, s) => sum + (s.assignedTasks > 0 ? s.completedTasks / s.assignedTasks : 0), 0) / totalStudents * 100 
+            : 0;
+        const avgQuality = totalReviews > 0
+            ? students.reduce((sum, s) => sum + s.labels.relevance + s.labels.concreteness + s.labels.constructive, 0) / (totalReviews * 3) * 100
+            : 0;
+        
+        document.getElementById('totalStudents').textContent = totalStudents;
+        document.getElementById('totalReviews').textContent = totalReviews.toLocaleString();
+        document.getElementById('avgParticipation').textContent = avgParticipation.toFixed(1) + '%';
+        document.getElementById('avgQuality').textContent = avgQuality.toFixed(1) + '%';
+    }
+    
+    // Render student cards
+    function renderStudentCards(students, hwKeys) {
+        const container = document.getElementById('studentSummaryContainer');
+        if (!container || students.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>No students found</h3>
+                    <p>Try adjusting your search or filter criteria.</p>
+                </div>
+            `;
+            return;
         }
+        
+        container.innerHTML = students.map(student => {
+            const participationRate = student.assignedTasks > 0 
+                ? (student.completedTasks / student.assignedTasks * 100).toFixed(1) 
+                : 0;
+            
+            // Get homework tabs with reviews
+            const hwWithReviews = hwKeys.filter(hw => student.reviews[hw] && student.reviews[hw].length > 0);
+            const activeHw = hwWithReviews[0] || hwKeys[0];
+            
+            return `
+                <div class="student-card" data-student-id="${student.id}">
+                    <div class="student-card-header">
+                        <div class="student-info">
+                            <h3>👤 ${student.id}</h3>
+                            <div class="student-meta">
+                                ${student.totalReviews} reviews across ${hwWithReviews.length} assignments
+                            </div>
+                        </div>
+                        <div class="student-stats-mini">
+                            <div class="mini-stat">
+                                <div class="value">${participationRate}%</div>
+                                <div class="label">Participation</div>
+                            </div>
+                            <div class="mini-stat">
+                                <div class="value">${student.totalReviews}</div>
+                                <div class="label">Reviews</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-tabs">
+                        ${hwKeys.map(hw => {
+                            const count = student.reviews[hw]?.length || 0;
+                            return `
+                                <button class="hw-tab ${hw === activeHw ? 'active' : ''}" 
+                                        data-hw="${hw}" data-student="${student.id}">
+                                    ${hw} <span class="review-count">${count}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="hw-review-content" data-student="${student.id}">
+                        ${renderReviewsList(student.reviews[activeHw] || [])}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add tab click events
+        container.querySelectorAll('.hw-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const hw = this.dataset.hw;
+                const studentId = this.dataset.student;
+                const card = container.querySelector(`.student-card[data-student-id="${studentId}"]`);
+                const student = allStudentSummaryData.find(s => s.id === studentId);
+                
+                if (card && student) {
+                    // Update active tab
+                    card.querySelectorAll('.hw-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update content
+                    const content = card.querySelector('.hw-review-content');
+                    content.innerHTML = renderReviewsList(student.reviews[hw] || []);
+                }
+            });
+        });
+    }
+    
+    // Render reviews list
+    function renderReviewsList(reviews) {
+        if (!reviews || reviews.length === 0) {
+            return `
+                <div class="no-reviews">
+                    <div class="icon">📝</div>
+                    <p>No reviews for this assignment</p>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="reviews-list">
+                ${reviews.map(review => {
+                    // Determine primary label
+                    let primaryLabel = '';
+                    let labelClass = '';
+                    if (review.constructive === 1) { primaryLabel = 'Constructive'; labelClass = 'constructive'; }
+                    else if (review.relevance === 1) { primaryLabel = 'Relevance'; labelClass = 'relevance'; }
+                    else if (review.concreteness === 1) { primaryLabel = 'Concreteness'; labelClass = 'concreteness'; }
+                    
+                    return `
+                        <div class="review-item ${labelClass}">
+                            <div class="review-header">
+                                <span class="reviewer-info">To: ${review.author}</span>
+                                <div class="review-meta">
+                                    ${primaryLabel ? `<span class="review-label ${labelClass}">${primaryLabel}</span>` : ''}
+                                    ${review.time ? `<span class="review-time">${review.time}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="review-text">${escapeHtml(review.feedback)}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+    
+    // Escape HTML for security
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Setup filter event listeners
+    function setupSummaryFilters(hwKeys) {
+        const searchInput = document.getElementById('studentSearch');
+        const hwFilter = document.getElementById('hwFilter');
+        const sortBy = document.getElementById('sortBy');
+        
+        function applyFilters() {
+            let filtered = [...allStudentSummaryData];
+            
+            // Search filter
+            const searchTerm = searchInput?.value.toLowerCase() || '';
+            if (searchTerm) {
+                filtered = filtered.filter(s => s.id.toLowerCase().includes(searchTerm));
+            }
+            
+            // Homework filter
+            const hwValue = hwFilter?.value || 'all';
+            if (hwValue !== 'all') {
+                filtered = filtered.filter(s => s.reviews[hwValue] && s.reviews[hwValue].length > 0);
+            }
+            
+            // Sorting
+            const sortValue = sortBy?.value || 'name';
+            filtered.sort((a, b) => {
+                switch(sortValue) {
+                    case 'reviews':
+                        return b.totalReviews - a.totalReviews;
+                    case 'participation':
+                        const rateA = a.assignedTasks > 0 ? a.completedTasks / a.assignedTasks : 0;
+                        const rateB = b.assignedTasks > 0 ? b.completedTasks / b.assignedTasks : 0;
+                        return rateB - rateA;
+                    default:
+                        return a.id.localeCompare(b.id);
+                }
+            });
+            
+            updateSummaryStats(filtered);
+            renderStudentCards(filtered, hwKeys);
+        }
+        
+        if (searchInput) searchInput.addEventListener('input', applyFilters);
+        if (hwFilter) hwFilter.addEventListener('change', applyFilters);
+        if (sortBy) sortBy.addEventListener('change', applyFilters);
     }
 
     // Initialize on DOM ready
     document.addEventListener("DOMContentLoaded", function () {
-        // Initialize Bubble Chart manager
-        if (window.BubbleChartManager) {
-            bubbleChartManager = new window.BubbleChartManager();
-        }
-        
         // Show loading progress
         const loadingText = document.getElementById('loading-text');
         const loadingProgress = document.getElementById('loading-progress');
@@ -631,7 +855,22 @@
                     });
                 }
                 
+                // Initialize homework filter dropdown
+                const hwFilter = document.getElementById('hwFilter');
+                if (hwFilter) {
+                    hwFilter.innerHTML = '<option value="all">All Assignments</option>';
+                    hwKeys.forEach(hwKey => {
+                        const option = document.createElement('option');
+                        option.value = hwKey;
+                        option.textContent = hwKey;
+                        hwFilter.appendChild(option);
+                    });
+                }
+                
                 updateGraphMode('all', currentHW);
+                
+                // Render Student Review Summary
+                renderStudentSummary(data, hwKeys);
             })
             .catch(error => {
                 console.error("Failed to load JSON:", error);
@@ -653,61 +892,9 @@
     });
   </script>
 
-  <!-- Load Bubble Chart from local static folder -->
-  <script src="./static/bubbleChart.js?v=7"></script>
-  
+  <!-- Scripts for graph functionality only -->
   <script>
-    // Bubble Chart PNG export function
-    function exportBubbleChartAsPNG(filename = 'bubble-chart.png', scale = 1) {
-        const canvas = document.getElementById('bubbleChart');
-        if (!canvas) {
-            alert('Bubble chart not found. Please load the chart first.');
-            return;
-        }
-        
-        const exportCanvas = document.createElement('canvas');
-        const exportCtx = exportCanvas.getContext('2d');
-        
-        const originalWidth = canvas.width;
-        const originalHeight = canvas.height;
-        exportCanvas.width = originalWidth * scale;
-        exportCanvas.height = originalHeight * scale;
-        
-        exportCtx.fillStyle = 'white';
-        exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-        
-        exportCtx.scale(scale, scale);
-        exportCtx.drawImage(canvas, 0, 0);
-        
-        exportCanvas.toBlob(function(blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 'image/png');
-    }
-
-    // Bind export button events after DOM ready
-    document.addEventListener('DOMContentLoaded', function() {
-        const exportBtn = document.getElementById('exportBubblePng');
-        const exportHighResBtn = document.getElementById('exportBubbleHighRes');
-        
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                exportBubbleChartAsPNG('bubble-chart.png', 1);
-            });
-        }
-        
-        if (exportHighResBtn) {
-            exportHighResBtn.addEventListener('click', () => {
-                exportBubbleChartAsPNG('bubble-chart-highres.png', 2);
-            });
-        }
-    });
+    // Export functions can be added here if needed
   </script>
 </body>
 </html>
