@@ -2,14 +2,14 @@ import { processReviewerData } from './graph_func.js';
 
 export function updateNetworkInstance(container, data, options, rawData) {
     if (window.networkInstance) {
-        // 停止物理引擎避免殘留動畫
+        // Stop physics engine to avoid residual animations
         window.networkInstance.setOptions({ physics: { enabled: false } });
-        // 徹底清除舊資料
+        // Completely clear old data
         window.networkInstance.setData({ nodes: [], edges: [] });
-        // 設定新資料和選項
+        // Set new data and options
         window.networkInstance.setData(data);
         window.networkInstance.setOptions({ ...options, physics: { enabled: true } });
-        // 強制重繪
+        // Force redraw
         window.networkInstance.redraw();
     } else {
         window.networkInstance = new vis.Network(container, data, options);
@@ -22,7 +22,7 @@ export function updateNetworkInstance(container, data, options, rawData) {
                 const reviewerRecords = selectedHWs.flatMap(hwName => 
                     rawData[hwName]?.filter(a => a.Reviewer_Name === nodeId) || []
                 );
-                console.log("審查任務:", reviewerRecords);
+                console.log("Review tasks:", reviewerRecords);
             }
         });
     }
@@ -32,99 +32,99 @@ export function generateGraph(rawData, mode, hwNames) {
     const container = document.getElementById('review-graph');
     if (!container) return;
 
-    // 資料處理
+    // Data processing
     const { nodes, links } = processReviewerData(rawData, mode, hwNames);
 
-    // 節點大小計算 - 改為 Assignment 層級的參與度（與氣泡圖一致）
+    // Node size calculation - Changed to Assignment level participation rate (consistent with bubble chart)
     const allCompletionRates = nodes.map(n => {
-        // 計算有多少個 Assignment 有有效評論
-        const assignmentCount = n.feedbacks.length; // 總分配的 Assignment 數
-        const completedAssignments = n.feedbacks.filter(fb => fb !== "").length; // 完成的 Assignment 數
+        // Calculate how many Assignments have valid reviews
+        const assignmentCount = n.feedbacks.length; // Total assigned Assignments
+        const completedAssignments = n.feedbacks.filter(fb => fb !== "").length; // Completed Assignments
         return assignmentCount > 0 ? completedAssignments / assignmentCount : 0;
     });
     const minRate = Math.min(...allCompletionRates);
     const maxRate = Math.max(...allCompletionRates);
-    const sizeScale = (rate) => 15 + (rate * 35); // 15-50 的範圍
+    const sizeScale = (rate) => 15 + (rate * 35); // Range of 15-50
 
-    // 節點顏色規則 (4個分級)
+    // Node color rules (4 levels)
     const colorConfig = {
         relevance: { 
             colors: ["#FFEEB7", "#FFD753", "#F1BC0D", "#D4A302"], 
-            title: '相關性分數' 
+            title: 'Relevance Score' 
         },
         concreteness: { 
             colors: ["#CFFFCA", "#95ED65", "#54AF23", "#327111"], 
-            title: '具體性分數' 
+            title: 'Concreteness Score' 
         },
         constructive: { 
             colors: ["#F1DCFF", "#C78EED", "#9444CA", "#590A8E"], 
-            title: '建設性分數' 
+            title: 'Constructive Score' 
         },
         all: {
             colors: ["#F0F0F0", "#E0E0E0", "#757575", "#424242"],
-            title: '綜合表現分數'
+            title: 'Overall Performance Score'
         }
     };
 
-    // 節點樣式
+    // Node styles
     const visNodes = nodes.map(n => {
-        // Assignment 層級的參與度計算（與氣泡圖一致）
-        const assignmentCount = n.feedbacks.length; // 總分配的 Assignment 數
-        const completedAssignments = n.feedbacks.filter(fb => fb !== "").length; // 完成的 Assignment 數
+        // Assignment level participation rate calculation (consistent with bubble chart)
+        const assignmentCount = n.feedbacks.length; // Total assigned Assignments
+        const completedAssignments = n.feedbacks.filter(fb => fb !== "").length; // Completed Assignments
         const completionRate = assignmentCount > 0 ? completedAssignments / assignmentCount : 0;
         
-        // 保持原有的分數計算邏輯（用於顏色）
+        // Keep original score calculation logic (for color)
         const totalFeedbacks = n.feedbacks.filter(fb => fb !== "").length;
         let score;
         
-        // 計算分數邏輯
+        // Score calculation logic
         if (mode === 'all') {
-            // All mode: 計算三個標籤score的平均
+            // All mode: Calculate average of three label scores
             if (totalFeedbacks > 0) {
                 const relevanceScore = n.labelCounts.relevance / totalFeedbacks;
                 const concretenessScore = n.labelCounts.concreteness / totalFeedbacks;
                 const constructiveScore = n.labelCounts.constructive / totalFeedbacks;
                 score = (relevanceScore + concretenessScore + constructiveScore) / 3;
                 
-                // 除錯資訊：只顯示前3個節點的詳細計算
+                // Debug info: Only show detailed calculation for first 3 nodes
                 if (n.id === 'D1018525' || Math.random() < 0.05) {
-                    console.log(`[All Mode] 審查者 ${n.id}:`);
-                    console.log(`  總分配Assignment: ${assignmentCount}`);
-                    console.log(`  完成Assignment數: ${completedAssignments}`);
-                    console.log(`  審查參與度: ${(completionRate * 100).toFixed(1)}%`);
-                    console.log(`  有效評論Round數: ${totalFeedbacks}`);
-                    console.log(`  相關性標籤: ${n.labelCounts.relevance} (score: ${relevanceScore.toFixed(3)})`);
-                    console.log(`  具體性標籤: ${n.labelCounts.concreteness} (score: ${concretenessScore.toFixed(3)})`);
-                    console.log(`  建設性標籤: ${n.labelCounts.constructive} (score: ${constructiveScore.toFixed(3)})`);
+                    console.log(`[All Mode] Reviewer ${n.id}:`);
+                    console.log(`  Total assigned Assignments: ${assignmentCount}`);
+                    console.log(`  Completed Assignments: ${completedAssignments}`);
+                    console.log(`  Review participation rate: ${(completionRate * 100).toFixed(1)}%`);
+                    console.log(`  Valid review Rounds: ${totalFeedbacks}`);
+                    console.log(`  Relevance labels: ${n.labelCounts.relevance} (score: ${relevanceScore.toFixed(3)})`);
+                    console.log(`  Concreteness labels: ${n.labelCounts.concreteness} (score: ${concretenessScore.toFixed(3)})`);
+                    console.log(`  Constructive labels: ${n.labelCounts.constructive} (score: ${constructiveScore.toFixed(3)})`);
                     console.log(`  All mode score: ${score.toFixed(3)}`);
                 }
             } else {
                 score = 0;
             }
         } else {
-            // 單一標籤模式
+            // Single label mode
             score = totalFeedbacks > 0 ? n.labelCounts[mode] / totalFeedbacks : 0;
         }
         
-        // 4分級顏色計算
+        // 4-level color calculation
         let color;
-        if (score >= 0.75) color = colorConfig[mode].colors[3];      // 最深色 (75%以上)
-        else if (score >= 0.5) color = colorConfig[mode].colors[2]; // 深色 (50-75%)
-        else if (score >= 0.25) color = colorConfig[mode].colors[1]; // 淺色 (25-50%)
-        else color = colorConfig[mode].colors[0];                   // 最淺色 (25%以下)
+        if (score >= 0.75) color = colorConfig[mode].colors[3];      // Darkest (75% and above)
+        else if (score >= 0.5) color = colorConfig[mode].colors[2]; // Dark (50-75%)
+        else if (score >= 0.25) color = colorConfig[mode].colors[1]; // Light (25-50%)
+        else color = colorConfig[mode].colors[0];                   // Lightest (below 25%)
 
         return {
             id: n.id,
             label: n.id,
-            value: sizeScale(completionRate), // 使用 Assignment 層級的參與度計算大小
+            value: sizeScale(completionRate), // Use Assignment level participation rate for size
             color: { background: color, border: color },
             borderWidth: 0,
             shape: "dot",
-            title: `審查者: ${n.id}\n${colorConfig[mode].title}: ${Math.round(score * 100)}%\n審查參與度: ${Math.round(completionRate * 100)}%`
+            title: `Reviewer: ${n.id}\n${colorConfig[mode].title}: ${Math.round(score * 100)}%\nReview participation rate: ${Math.round(completionRate * 100)}%`
         };
     });
 
-    // 邊樣式
+    // Edge styles
     const visEdges = links.map(e => ({
         from: e.from,
         to: e.to,
@@ -134,7 +134,7 @@ export function generateGraph(rawData, mode, hwNames) {
         width: 1.5
     }));
 
-    // 建立 DataSet 和 options
+    // Create DataSet and options
     const data = { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
     const options = {
         nodes: {
@@ -169,7 +169,7 @@ export function generateGraph(rawData, mode, hwNames) {
         }
     };
 
-    // 更新實例
+    // Update instance
     updateNetworkInstance(container, data, options, rawData);
 }
 

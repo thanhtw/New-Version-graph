@@ -1,10 +1,10 @@
-// 全作業標籤頻率統計圖表 - Node.js版本
+// All Assignment Label Frequency Statistics Chart - Node.js Version
 const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('canvas');
 const Chart = require('chart.js/auto');
 
-// 載入3標籤資料
+// Load 3-label data
 function load3LabelData() {
     try {
         const dataPath = path.join(__dirname, '../function/3labeled_processed_totalData.json');
@@ -16,11 +16,11 @@ function load3LabelData() {
     }
 }
 
-// 計算每個作業的3標籤出現頻率
+// Calculate 3-label frequency for each assignment
 function calculateHwLabelFrequency(data) {
     const hwStats = {};
     
-    // 初始化統計結構
+    // Initialize statistics structure
     Object.keys(data).forEach(hwName => {
         hwStats[hwName] = {
             total: 0,
@@ -30,12 +30,12 @@ function calculateHwLabelFrequency(data) {
         };
     });
     
-    // 統計每個作業的標籤頻率
+    // Count label frequency for each assignment
     Object.entries(data).forEach(([hwName, hwData]) => {
         hwData.forEach(student => {
             if (student.Round && Array.isArray(student.Round)) {
                 student.Round.forEach(round => {
-                    // 只統計有完整資料的回合
+                    // Only count rounds with complete data
                     if (round.Relevance !== undefined && round.Concreteness !== undefined && round.Constructive !== undefined) {
                         hwStats[hwName].total++;
                         if (round.Relevance === 1) hwStats[hwName].relevance++;
@@ -47,7 +47,7 @@ function calculateHwLabelFrequency(data) {
         });
     });
     
-    // 計算百分比
+    // Calculate percentage
     const percentageStats = {};
     Object.entries(hwStats).forEach(([hwName, stats]) => {
         if (stats.total > 0) {
@@ -70,14 +70,14 @@ function calculateHwLabelFrequency(data) {
     return percentageStats;
 }
 
-// 創建圖表
+// Create chart
 function createHwLabelChart(stats) {
-    // 創建 Canvas
+    // Create Canvas
     const canvas = createCanvas(800, 600);
     const ctx = canvas.getContext('2d');
     
-    // 準備資料
-    const hwNames = Object.keys(stats).sort(); // 排序作業名稱
+    // Prepare data
+    const hwNames = Object.keys(stats).sort(); // Sort assignment names
     const relevanceData = hwNames.map(hw => stats[hw].relevance);
     const concretenessData = hwNames.map(hw => stats[hw].concreteness);
     const constructiveData = hwNames.map(hw => stats[hw].constructive);
@@ -116,7 +116,7 @@ function createHwLabelChart(stats) {
             plugins: {
                 title: {
                     display: true,
-                    text: '全作業3標籤出現頻率統計',
+                    text: 'All Assignment 3-Label Frequency Statistics',
                     font: {
                         size: 18,
                         weight: 'bold'
@@ -135,7 +135,7 @@ function createHwLabelChart(stats) {
                 x: {
                     title: {
                         display: true,
-                        text: '作業名稱',
+                        text: 'Assignment Name',
                         font: {
                             size: 14,
                             weight: 'bold'
@@ -150,7 +150,7 @@ function createHwLabelChart(stats) {
                 y: {
                     title: {
                         display: true,
-                        text: '出現頻率 (%)',
+                        text: 'Frequency (%)',
                         font: {
                             size: 14,
                             weight: 'bold'
@@ -179,42 +179,42 @@ function createHwLabelChart(stats) {
     return { chart, canvas };
 }
 
-// 保存圖表為PNG
+// Save chart as PNG
 function saveChartAsPNG(canvas, filename = 'hwLabelChart.png') {
     const outputPath = path.join(__dirname, filename);
     const buffer = canvas.toBuffer('image/png');
     fs.writeFileSync(outputPath, buffer);
-    console.log(`圖表已保存至: ${outputPath}`);
+    console.log(`Chart saved to: ${outputPath}`);
 }
 
-// 主要執行函數
+// Main execution function
 async function initHwLabelChart() {
-    console.log('開始載入3標籤資料...');
+    console.log('Loading 3-label data...');
     
     const data = load3LabelData();
     if (!data) {
-        console.error('無法載入3標籤資料');
+        console.error('Failed to load 3-label data');
         return;
     }
     
-    console.log('計算標籤頻率統計...');
+    console.log('Calculating label frequency statistics...');
     const stats = calculateHwLabelFrequency(data);
-    console.log('標籤頻率統計結果:', stats);
+    console.log('Label frequency statistics result:', stats);
     
-    // 創建圖表
+    // Create chart
     const { chart, canvas } = createHwLabelChart(stats);
     
-    // 保存為PNG
+    // Save as PNG
     saveChartAsPNG(canvas, 'hwLabelChart.png');
     
-    // 顯示統計摘要
+    // Display statistics summary
     displayStatsSummary(stats);
 }
 
-// 顯示統計摘要
+// Display statistics summary
 function displayStatsSummary(stats) {
-    console.log('\n=== 統計摘要 ===');
-    console.log('作業\t\tRelevance (%)\tConcreteness (%)\tConstructive (%)\t總評論數');
+    console.log('\n=== Statistics Summary ===');
+    console.log('Assignment\t\tRelevance (%)\tConcreteness (%)\tConstructive (%)\tTotal Reviews');
     console.log('---'.repeat(25));
     
     Object.entries(stats).sort().forEach(([hwName, data]) => {
@@ -222,10 +222,10 @@ function displayStatsSummary(stats) {
     });
 }
 
-// 導出函數
+// Export functions
 module.exports = { initHwLabelChart, calculateHwLabelFrequency, createHwLabelChart, saveChartAsPNG };
 
-// 如果直接執行此檔案
+// If running this file directly
 if (require.main === module) {
     initHwLabelChart();
 }

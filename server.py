@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ProgEdu Review 專用本地服務器
-解決靜態文件服務和 CORS 問題
+ProgEdu Review Local Server - Fixed JSON Response Issues
+Resolves static file serving and CORS issues
 """
 
 import http.server
@@ -12,144 +12,162 @@ import mimetypes
 from urllib.parse import unquote
 import json
 
-# 使用當前腳本所在目錄
+# Use the directory where this script is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """自定義請求處理器，支援 CORS 和正確的 MIME 類型"""
+    """Custom request handler with CORS support and proper JSON handling"""
     
     def __init__(self, *args, **kwargs):
-        # 確保在正確的目錄下運行
+        # Ensure running in the correct directory
         super().__init__(*args, directory=BASE_DIR, **kwargs)
     
-    def end_headers(self):
-        """添加 CORS 標頭"""
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        super().end_headers()
-
-    def guess_type(self, path):
-        """確保 JSON 文件有正確的 MIME 類型"""
-        base, ext = os.path.splitext(path.lower())
-        if ext == '.json':
-            return 'application/json'
-        return super().guess_type(path)
-
     def do_GET(self):
-        """處理 GET 請求"""
-        # URL 解碼
+        """Handle GET requests"""
+        # URL decode
         path = unquote(self.path)
         
-        # 移除查詢參數
+        # Remove query parameters
         if '?' in path:
             path = path.split('?')[0]
         
-        print(f"🌐 收到請求: {path}")
+        print(f"🌐 Received request: {path}")
         
-        # 根目錄重定向到 static
+        # Special handling for JSON files - before other processing
+        if (path.endswith('.json') or 'visualization_data.json' in path):
+            print(f"📊 JSON request: {path}")
+            self._serve_json_only(path)
+            return
+        
+        # Redirect root to static
         if path == '/':
             self.send_response(301)
             self.send_header('Location', '/static/')
+            self._add_cors_headers()
             self.end_headers()
             return
             
-        # 處理 static 目錄的索引
+        # Handle static directory index
         if path == '/static/' or path == '/static':
-            self.list_static_directory()
+            self._list_static_directory()
             return
         
-        # 特殊處理 JSON 文件 - 精確匹配
-        if (path.endswith('.json') or 
-            '/visualization_data.json' in path or
-            path == '/static/visualization_data.json'):
-            print(f"📊 檢測到JSON請求: {path}")
-            self.serve_json_file(path)
-            return
-        
-        # 對於其他所有文件，調用父類方法
-        print(f"📄 使用標準處理: {path}")
+        # For all other files, call parent method
+        print(f"📄 Standard handling: {path}")
         try:
             super().do_GET()
         except Exception as e:
-            print(f"❌ 標準處理失敗 {path}: {e}")
+            print(f"❌ Standard handling failed {path}: {e}")
             self.send_error(404, f"File not found: {path}")
 
-    def serve_json_file(self, path):
-        """專門處理 JSON 文件的方法 - 使用標準方法但確保純JSON輸出"""
+    def _serve_json_only(self, path):
+        """Handle JSON files specifically, return pure JSON data"""
         try:
-            print(f"🔧 處理JSON請求: {path}")
+            print(f"🔧 Processing JSON: {path}")
             
-            # 構建完整的文件路徑
+            # Build full file path
             if path.startswith('/'):
-                file_path = path[1:]  # 移除開頭的 /
+                file_path = path[1:]
             else:
                 file_path = path
             
             full_path = os.path.join(BASE_DIR, file_path)
-            print(f"📂 完整路徑: {full_path}")
+            print(f"📂 File path: {full_path}")
             
             if not os.path.exists(full_path):
-                print(f"❌ 文件不存在: {full_path}")
-                self.send_error(404, f"JSON file not found: {path}")
+                print(f"❌ File not found: {full_path}")
+                self._send_json_error(404, "JSON file not found")
                 return
             
-            # 讀取 JSON 文件
+            # Read JSON file
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            print(f"📊 JSON文件大小: {len(content)} 字符")
+            print(f"📊 JSON size: {len(content)} characters")
             
-            # 驗證JSON格式
+            # Validate JSON format
             try:
-                import json
-                json.loads(content)  # 驗證JSON格式
-                print(f"✅ JSON格式驗證通過")
+                json.loads(content)
+                print("✅ JSON format validation passed")
             except json.JSONDecodeError as e:
-                print(f"❌ JSON格式錯誤: {e}")
-                self.send_error(500, f"Invalid JSON format: {e}")
+                print(f"❌ JSON format error: {e}")
+                self._send_json_error(500, f"Invalid JSON: {e}")
                 return
             
-            # 使用標準方法發送響應
-            content_bytes = content.encode('utf-8')
+            # Send pure JSON response
+            self._send_pure_json(content)
+            print("✅ JSON response sent successfully")
             
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', str(len(content_bytes)))
-            # 手動添加CORS頭，避免使用 end_headers() 中的自動添加
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        except Exception as e:
+            print(f"❌ JSON processing failed: {e}")
+            import traceback
+            traceback.print_exc()
+            self._send_json_error(500, f"Server error: {e}")
+
+    def _send_pure_json(self, json_content):
+        """Send pure JSON content without extra HTTP headers"""
+        try:
+            content_bytes = json_content.encode('utf-8')
             
-            # 結束頭部
-            self.wfile.write(b'\r\n')
+            # Build minimal HTTP response
+            response_parts = [
+                "HTTP/1.0 200 OK",
+                "Content-Type: application/json; charset=utf-8",
+                f"Content-Length: {len(content_bytes)}",
+                "Access-Control-Allow-Origin: *",
+                "Access-Control-Allow-Methods: GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers: Content-Type",
+                "",  # Empty line separates headers and body
+                ""   # This will be replaced by JSON content
+            ]
             
-            # 發送JSON內容
+            # Send response headers
+            response_headers = "\r\n".join(response_parts[:-1]) + "\r\n"
+            self.wfile.write(response_headers.encode('utf-8'))
+            
+            # Send JSON content
             self.wfile.write(content_bytes)
             self.wfile.flush()
             
-            print(f"✅ JSON 文件服務成功: {path}")
+        except Exception as e:
+            print(f"❌ Failed to send JSON response: {e}")
+
+    def _send_json_error(self, status_code, message):
+        """Send JSON formatted error response"""
+        try:
+            error_json = json.dumps({"error": message, "status": status_code})
+            content_bytes = error_json.encode('utf-8')
+            
+            response_parts = [
+                f"HTTP/1.0 {status_code} Error",
+                "Content-Type: application/json; charset=utf-8",
+                f"Content-Length: {len(content_bytes)}",
+                "Access-Control-Allow-Origin: *",
+                "",
+                ""
+            ]
+            
+            response_headers = "\r\n".join(response_parts[:-1]) + "\r\n"
+            self.wfile.write(response_headers.encode('utf-8'))
+            self.wfile.write(content_bytes)
+            self.wfile.flush()
             
         except Exception as e:
-            print(f"❌ JSON 文件服務失敗: {path}, 錯誤: {e}")
-            import traceback
-            traceback.print_exc()
-            self.send_error(500, f"Error serving JSON file: {e}")
+            print(f"❌ Failed to send error response: {e}")
 
-    def end_headers(self):
-        """重寫 end_headers 以避免重複的頭部"""
-        # 對於JSON請求，不調用此方法
-        if hasattr(self, '_json_request'):
-            return
-        
-        # 對於其他請求，添加 CORS 標頭
+    def _add_cors_headers(self):
+        """Add CORS headers"""
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def end_headers(self):
+        """Override end_headers to add CORS support"""
+        self._add_cors_headers()
         super().end_headers()
 
-    def list_static_directory(self):
-        """列出 static 目錄內容"""
+    def _list_static_directory(self):
+        """List static directory contents"""
         try:
             static_path = os.path.join(BASE_DIR, "static")
             files = os.listdir(static_path)
@@ -159,7 +177,7 @@ class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             <html>
             <head>
                 <meta charset="utf-8">
-                <title>ProgEdu Review - 文件目錄</title>
+                <title>ProgEdu Review - File Directory</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 40px; }
                     h1 { color: #333; }
@@ -181,8 +199,11 @@ class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 </style>
             </head>
             <body>
-                <h1>🎓 ProgEdu Review - 文件目錄</h1>
-                <h2>📁 主要頁面</h2>
+                <h1>🎓 ProgEdu Review - File Directory</h1>
+                <div class="alert alert-success">
+                    <strong>✅ JSON Fix Complete!</strong> Visualization data can now be loaded normally
+                </div>
+                <h2>📁 Main Pages</h2>
                 <ul class="file-list">
             """
             
@@ -191,14 +212,26 @@ class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             js_files = [f for f in files if f.endswith('.js')]
             json_files = [f for f in files if f.endswith('.json')]
             
-            # HTML 文件
+            # Show important pages first
+            important_pages = [
+                ('visualizationAnalysis.html', '📊 Visualization Analysis (Main Feature)'),
+                ('test_json_load.html', '🔍 JSON Load Test'),
+                ('academicTables.html', '📋 Academic Tables'),
+                ('multipleRegressionReport.html', '📈 Multiple Regression Report')
+            ]
+            
+            for page, description in important_pages:
+                if page in html_files:
+                    html_content += f'<li><a href="/static/{page}" class="html-file">{description}</a></li>\n'
+                    html_files.remove(page)
+            
+            # 其他HTML文件
             for file in sorted(html_files):
-                if file != 'index.html':  # index.html 放最前面
-                    html_content += f'<li><a href="/static/{file}" class="html-file">📄 {file}</a></li>\n'
+                html_content += f'<li><a href="/static/{file}" class="html-file">📄 {file}</a></li>\n'
             
             html_content += """
                 </ul>
-                <h2>📁 數據文件</h2>
+                <h2>📁 Data Files</h2>
                 <ul class="file-list">
             """
             
@@ -208,18 +241,8 @@ class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             html_content += """
                 </ul>
-                <h2>📁 腳本文件</h2>
-                <ul class="file-list">
-            """
-            
-            # JS 文件
-            for file in sorted(js_files):
-                html_content += f'<li><a href="/static/{file}" class="js-file">⚙️ {file}</a></li>\n'
-            
-            html_content += """
-                </ul>
                 <footer style="margin-top: 40px; color: #666;">
-                    <p>🚀 服務器運行於: http://127.0.0.1:8000</p>
+                    <p>🚀 Server running successfully, JSON issues fixed</p>
                 </footer>
             </body>
             </html>
@@ -234,45 +257,47 @@ class ProgEduHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, f"Error listing directory: {e}")
 
     def log_message(self, format, *args):
-        """自定義日誌格式"""
+        """Custom log format"""
         print(f"[{self.date_time_string()}] {format % args}")
 
-def start_server(port=8000):
-    """啟動服務器"""
+def start_server(port=8001):
+    """Start the server"""
     try:
-        # 切換到正確的工作目錄
+        # Change to the correct working directory
         os.chdir(BASE_DIR)
         
         with socketserver.TCPServer(("", port), ProgEduHTTPRequestHandler) as httpd:
-            print(f"🎓 ProgEdu Review 服務器啟動成功!")
-            print(f"📡 地址: http://127.0.0.1:{port}")
-            print(f"📁 根目錄: {os.getcwd()}")
-            print(f"🌐 主頁面: http://127.0.0.1:{port}/static/")
-            print(f"📊 視覺化分析: http://127.0.0.1:{port}/static/visualizationAnalysis.html")
-            print(f"🔗 網路圖: http://127.0.0.1:{port}/static/3label.html")
-            print("\n按 Ctrl+C 停止服務器")
+            print(f"🎓 ProgEdu Review Server Started Successfully! (JSON Fixed Version)")
+            print(f"📡 Address: http://127.0.0.1:{port}")
+            print(f"📁 Root Directory: {os.getcwd()}")
+            print(f"🌐 Main Page: http://127.0.0.1:{port}/static/")
+            print(f"📊 Visualization Analysis: http://127.0.0.1:{port}/static/visualizationAnalysis.html")
+            print(f"🔍 JSON Test: http://127.0.0.1:{port}/static/test_json_load.html")
+            print(f"🔗 Network Graph: http://127.0.0.1:{port}/static/3label.html")
+            print(f"\n✅ JSON loading issue fixed!")
+            print("Press Ctrl+C to stop the server")
             
             httpd.serve_forever()
             
     except KeyboardInterrupt:
-        print("\n👋 服務器已停止")
+        print("\n👋 Server stopped")
     except OSError as e:
-        if e.errno == 48:  # Address already in use
-            print(f"❌ 端口 {port} 已被占用，嘗試使用端口 {port + 1}")
+        if e.errno in (48, 98):  # Address already in use (48=macOS, 98=Linux)
+            print(f"❌ Port {port} is already in use, trying port {port + 1}")
             start_server(port + 1)
         else:
-            print(f"❌ 服務器啟動失敗: {e}")
+            print(f"❌ Server startup failed: {e}")
     except Exception as e:
-        print(f"❌ 意外錯誤: {e}")
+        print(f"❌ Unexpected error: {e}")
 
 if __name__ == "__main__":
-    # 檢查是否指定了端口
-    port = 8000
+    # Check if port is specified
+    port = 8001
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("❌ 端口號必須是數字")
+            print("❌ Port number must be a number")
             sys.exit(1)
     
     start_server(port)

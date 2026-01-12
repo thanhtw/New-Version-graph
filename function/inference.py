@@ -2,16 +2,16 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from typing import List, Dict
 
-# 初始化模型和 tokenizer
+# Initialize model and tokenizer
 def load_model(model_path: str, device: torch.device):
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(
         model_path,
-        problem_type="multi_label_classification",  # 明確指定多標籤任務
+        problem_type="multi_label_classification",  # Explicitly specify multi-label task
         num_labels=3
     )
     model.to(device)
-    model.eval()  # 切換到評估模式
+    model.eval()  # Switch to evaluation mode
     return model, tokenizer
 
 def batch_predict(
@@ -21,9 +21,9 @@ def batch_predict(
         texts: List[str], 
         thresholds: List[float],
         batch_size: int = 32
-) -> List[Dict[str, any]]:  # 批次預測文本 並返回0 1 + 信心分數
+) -> List[Dict[str, any]]:  # Batch predict texts and return 0/1 + confidence scores
     if len(thresholds) != 3:
-        raise ValueError("thresholds 必須是長度 3 的列表")
+        raise ValueError("thresholds must be a list of length 3")
     
     results = []
      
@@ -31,7 +31,7 @@ def batch_predict(
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i:i+batch_size]
         batch_size_current = len(batch_texts)
-        # 初始化所有位置為預設值 0 和低信心分數
+        # Initialize all positions with default value 0 and low confidence scores
         batch_results = [
             {
                 "relevance": 0, "concreteness": 0, "constructive": 0,
@@ -40,7 +40,7 @@ def batch_predict(
             for _ in range(batch_size_current)
         ]
 
-        valid_texts = []  # 提取有效的文本
+        valid_texts = []  # Extract valid texts
         valid_indices = []
 
         for idx, text in enumerate(batch_texts):
@@ -48,7 +48,7 @@ def batch_predict(
                 valid_texts.append(text)
                 valid_indices.append(idx)
 
-        # 若存在有效文本才進行推論
+        # Only perform inference if valid texts exist
         if valid_texts:
             inputs = tokenizer(
                 valid_texts,
@@ -61,27 +61,27 @@ def batch_predict(
             with torch.no_grad():
                 outputs = model(**inputs)
             
-            # 驗證輸出維度
+            # Validate output dimensions
             logits = outputs.logits
             if logits.shape[1] != 3:
-                raise ValueError(f"模型輸出的 logits 維度應為 3，實際為 {logits.shape[1]}")
+                raise ValueError(f"Model output logits dimension should be 3, actual is {logits.shape[1]}")
             
-            # 計算預測結果和信心分數
+            # Calculate predictions and confidence scores
             probs = torch.sigmoid(logits).cpu().numpy()
             binary_preds = (probs > thresholds).astype(int)
             
-            # 更新有效位置的結果
+            # Update results for valid positions
             for valid_idx, (batch_idx, pred, prob) in enumerate(zip(valid_indices, binary_preds, probs)):
                 text = valid_texts[valid_idx]
                 
-                # 關鍵字規則：如果評論中包含"建議"，將建設性標籤設為1
+                # Keyword rule: if review contains "suggestion", set constructive label to 1
                 constructive_label = int(pred[2])
                 constructive_confidence = float(prob[2])
                 if "建議" in text:
                     constructive_label = 1
-                    # 如果原本信心分數低於閾值但因關鍵字設為1，調整信心分數
+                    # If original confidence was below threshold but set to 1 due to keyword, adjust confidence
                     if constructive_confidence < thresholds[2]:
-                        constructive_confidence = max(constructive_confidence, 0.6)  # 設定最低信心分數
+                        constructive_confidence = max(constructive_confidence, 0.6)  # Set minimum confidence score
                 
                 batch_results[batch_idx] = {
                     "relevance": int(pred[0]),
@@ -116,10 +116,10 @@ def find_uncertain_predictions(
         字典包含不同類型的可疑預測範例
     """
     uncertain_cases = {
-        "low_confidence": [],      # 信心分數低的案例
-        "conflicting_labels": [],  # 標籤衝突的案例（某些標籤高信心，某些低信心）
-        "keyword_override": [],    # 被關鍵字規則覆蓋的案例
-        "high_confidence_negative": []  # 高信心但預測為負的案例
+        "low_confidence": [],      # Cases with low confidence scores
+        "conflicting_labels": [],  # Cases with conflicting labels (some high confidence, some low)
+        "keyword_override": [],    # Cases overridden by keyword rules
+        "high_confidence_negative": []  # High confidence but predicted negative cases
     }
     
     for i, (text, pred) in enumerate(zip(texts, predictions)):
@@ -137,7 +137,7 @@ def find_uncertain_predictions(
             pred["constructive"]
         ]
         
-        # 檢查低信心分數案例
+        # Check low confidence cases
         min_confidence = min(confidences)
         if min_confidence < low_confidence_threshold:
             uncertain_cases["low_confidence"].append({
@@ -147,7 +147,7 @@ def find_uncertain_predictions(
                 "index": i
             })
         
-        # 檢查標籤衝突案例（某些標籤高信心，某些低信心）
+        # Check conflicting label cases (some high confidence, some low)
         max_confidence = max(confidences)
         if max_confidence > high_confidence_threshold and min_confidence < low_confidence_threshold:
             uncertain_cases["conflicting_labels"].append({
@@ -157,11 +157,11 @@ def find_uncertain_predictions(
                 "index": i
             })
         
-        # 檢查關鍵字覆蓋案例
+        # Check keyword override cases
         if "建議" in text and pred["constructive"] == 1:
-            # 如果原始模型信心分數低但被關鍵字規則設為1
+            # If original model confidence was low but set to 1 by keyword rule
             original_confidence = pred["constructive_confidence"]
-            if original_confidence < 0.6:  # 假設我們在關鍵字規則中設定的最低信心分數
+            if original_confidence < 0.6:  # Assuming minimum confidence set in keyword rule
                 uncertain_cases["keyword_override"].append({
                     "text": text,
                     "predictions": pred,
@@ -169,7 +169,7 @@ def find_uncertain_predictions(
                     "index": i
                 })
         
-        # 檢查高信心但預測為負的案例
+        # Check high confidence negative cases
         for j, (label, confidence) in enumerate(zip(labels, confidences)):
             if label == 0 and confidence > high_confidence_threshold:
                 label_names = ["relevance", "concreteness", "constructive"]

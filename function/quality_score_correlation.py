@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-品質指標與成績相關性分析
-分析學生評論品質指標（相關性、具體性、建設性）與學期成績的關聯性
+Quality Metrics and Grade Correlation Analysis
+Analyzes the correlation between student review quality metrics (relevance, specificity, constructiveness) and semester grades
 """
 
 import pandas as pd
@@ -13,23 +13,23 @@ from matplotlib import rcParams
 import json
 import os
 
-# 使用當前腳本所在目錄
+# Use current script directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 設定中文字型
+# Set Chinese font
 rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'DejaVu Sans']
 rcParams['axes.unicode_minus'] = False
 plt.rcParams['figure.figsize'] = (10, 8)
 
 def load_student_data():
-    """載入並處理學生品質指標資料"""
+    """Load and process student quality metrics data"""
     try:
-        # 載入處理過的資料
+        # Load processed data
         data_path = os.path.join(BASE_DIR, 'function', '3labeled_processed_totalData.json')
         with open(data_path, 'r', encoding='utf-8') as f:
             total_data = json.load(f)
         
-        # 整理學生資料
+        # Organize student data
         student_metrics = {}
         
         if 'recordData' in total_data:
@@ -56,15 +56,15 @@ def load_student_data():
                         'assignments': set()
                     }
                 
-                # 統計每個作業的品質指標
+                # Count quality metrics for each assignment
                 for round_key, round_data in assignment.items():
                     if round_key.startswith('Round') and isinstance(round_data, dict):
                         feedback = round_data.get('feedback_text', '').strip()
-                        if feedback:  # 有效評論
+                        if feedback:  # Valid review
                             student_metrics[reviewer]['total_valid_rounds'] += 1
                             student_metrics[reviewer]['assignments'].add(hw_name)
                             
-                            # 統計品質指標
+                            # Count quality metrics
                             if round_data.get('Relevance') == 1:
                                 student_metrics[reviewer]['relevance_count'] += 1
                             if round_data.get('Concreteness') == 1:
@@ -75,12 +75,12 @@ def load_student_data():
         return student_metrics
         
     except Exception as e:
-        print(f"載入資料時發生錯誤: {e}")
+        print(f"Error loading data: {e}")
         return {}
 
 def generate_mock_scores(student_metrics):
-    """根據品質指標生成模擬的成績資料"""
-    np.random.seed(42)  # 確保結果可重現
+    """Generate simulated grade data based on quality metrics"""
+    np.random.seed(42)  # Ensure reproducibility
     
     scores_data = {}
     
@@ -88,15 +88,15 @@ def generate_mock_scores(student_metrics):
         if metrics['total_valid_rounds'] == 0:
             continue
             
-        # 計算品質指標比例
+        # Calculate quality metric ratios
         relevance_ratio = metrics['relevance_count'] / metrics['total_valid_rounds']
         concreteness_ratio = metrics['concreteness_count'] / metrics['total_valid_rounds']
         constructive_ratio = metrics['constructive_count'] / metrics['total_valid_rounds']
         
-        # 根據品質指標影響成績（模擬合理的相關性）
+        # Influence grades based on quality metrics (simulate reasonable correlation)
         quality_score = (relevance_ratio * 0.3 + concreteness_ratio * 0.4 + constructive_ratio * 0.3)
         
-        # 基礎成績 + 品質影響 + 隨機變異
+        # Base score + quality influence + random variation
         base_score = 70 + quality_score * 25 + np.random.normal(0, 5)
         
         scores_data[student] = {
@@ -108,13 +108,13 @@ def generate_mock_scores(student_metrics):
     return scores_data
 
 def create_correlation_analysis():
-    """創建品質指標與成績的相關性分析"""
+    """Create quality metrics and grade correlation analysis"""
     
-    # 載入資料
+    # Load data
     student_metrics = load_student_data()
     scores_data = generate_mock_scores(student_metrics)
     
-    # 準備分析資料
+    # Prepare analysis data
     analysis_data = []
     
     for student, metrics in student_metrics.items():
@@ -122,37 +122,37 @@ def create_correlation_analysis():
             total_rounds = metrics['total_valid_rounds']
             
             row = {
-                '學生': student,
-                '相關性': metrics['relevance_count'] / total_rounds,
-                '具體性': metrics['concreteness_count'] / total_rounds,
-                '建設性': metrics['constructive_count'] / total_rounds,
-                '期中': scores_data[student]['期中'],
-                '期末': scores_data[student]['期末'],
-                '學期': scores_data[student]['學期']
+                'Student': student,
+                'Relevance': metrics['relevance_count'] / total_rounds,
+                'Specificity': metrics['concreteness_count'] / total_rounds,
+                'Constructiveness': metrics['constructive_count'] / total_rounds,
+                'Midterm': scores_data[student]['期中'],
+                'Final': scores_data[student]['期末'],
+                'Semester': scores_data[student]['學期']
             }
             analysis_data.append(row)
     
     df = pd.DataFrame(analysis_data)
     
-    # 計算相關係數矩陣
-    correlation_cols = ['相關性', '具體性', '建設性', '期中', '期末', '學期']
+    # Calculate correlation coefficient matrix
+    correlation_cols = ['Relevance', 'Specificity', 'Constructiveness', 'Midterm', 'Final', 'Semester']
     correlation_matrix = df[correlation_cols].corr()
     
     return df, correlation_matrix
 
 def create_unified_heatmap(correlation_matrix):
-    """創建統一色彩的相關係數熱力圖"""
+    """Create unified color correlation coefficient heatmap"""
     
     plt.figure(figsize=(10, 8))
     
-    # 創建自定義紅藍配色 - 紅色表示正相關，藍色表示負相關
+    # Create custom red-blue colormap - red for positive correlation, blue for negative
     colors = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#f1f5f9', 
               '#fecaca', '#f87171', '#ef4444', '#dc2626', '#b91c1c']
     
     from matplotlib.colors import LinearSegmentedColormap
     custom_cmap = LinearSegmentedColormap.from_list('custom_rdbu', colors, N=256)
     
-    # 繪製熱力圖
+    # Draw heatmap
     ax = sns.heatmap(
         correlation_matrix,
         annot=True,
@@ -160,7 +160,7 @@ def create_unified_heatmap(correlation_matrix):
         center=0,
         square=True,
         fmt='.3f',
-        cbar_kws={'shrink': 0.8, 'label': '相關係數'},
+        cbar_kws={'shrink': 0.8, 'label': 'Correlation Coefficient'},
         linewidths=0.5,
         vmin=-1,
         vmax=1,
@@ -169,13 +169,13 @@ def create_unified_heatmap(correlation_matrix):
         yticklabels=True
     )
     
-    # 設定標題和標籤
-    plt.title('品質指標與成績相關係數矩陣', fontsize=18, pad=20, weight='bold')
+    # Set title and labels
+    plt.title('Quality Metrics and Grade Correlation Matrix', fontsize=18, pad=20, weight='bold')
     plt.xticks(rotation=0, ha='center', fontsize=14)
     plt.yticks(rotation=0, fontsize=14)
     
-    # 添加色彩說明
-    plt.figtext(0.02, 0.02, '🔵 負相關 (藍色)     🔴 正相關 (紅色)     顏色深度表示相關性強度', 
+    # Add color legend
+    plt.figtext(0.02, 0.02, '🔵 Negative correlation (Blue)     🔴 Positive correlation (Red)     Color depth indicates correlation strength', 
                 fontsize=12, ha='left', weight='bold')
     
     plt.tight_layout()
@@ -184,40 +184,40 @@ def create_unified_heatmap(correlation_matrix):
     return plt
 
 def generate_correlation_report():
-    """生成完整的相關係數分析報告"""
+    """Generate complete correlation coefficient analysis report"""
     
-    print("開始分析品質指標與成績的相關性...")
+    print("Starting quality metrics and grade correlation analysis...")
     
-    # 創建相關性分析
+    # Create correlation analysis
     df, correlation_matrix = create_correlation_analysis()
     
     if df.empty:
-        print("無法載入有效資料")
+        print("Unable to load valid data")
         return
     
-    print(f"分析學生數量: {len(df)}")
-    print("相關係數矩陣:")
+    print(f"Number of students analyzed: {len(df)}")
+    print("Correlation coefficient matrix:")
     print(correlation_matrix)
     
-    # 創建並儲存熱力圖
+    # Create and save heatmap
     plt_obj = create_unified_heatmap(correlation_matrix)
     
     output_path = os.path.join(BASE_DIR, 'static', 'quality_score_correlation.png')
     plt_obj.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
-    print(f"熱力圖已儲存至: {output_path}")
+    print(f"Heatmap saved to: {output_path}")
     
-    # 生成JSON資料供前端使用
+    # Generate JSON data for frontend use
     result_data = {
         'correlation_matrix': correlation_matrix.to_dict(),
         'student_count': len(df),
-        'variables': ['相關性', '具體性', '建設性', '期中', '期末', '學期']
+        'variables': ['Relevance', 'Specificity', 'Constructiveness', 'Midterm', 'Final', 'Semester']
     }
     
     json_path = os.path.join(BASE_DIR, 'static', 'correlation_data.json')
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(result_data, f, ensure_ascii=False, indent=2)
     
-    print(f"相關性資料已儲存至: {json_path}")
+    print(f"Correlation data saved to: {json_path}")
     
     plt_obj.show()
     
