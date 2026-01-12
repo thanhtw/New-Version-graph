@@ -84,7 +84,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Try to load data from pipeline output first, then fallback to static data
     async function loadData() {
         const dataSources = [
-            "../output/data_summary.json",      // Pipeline summary (fast)
             "../output/final_result.json"       // Pipeline full data
         ];
         
@@ -94,11 +93,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (response.ok) {
                     const data = await response.json();
                     console.log(`✅ Loaded data from: ${source}`);
-                    
-                    // If it's summary data, convert to display format
-                    if (source.includes('data_summary.json')) {
-                        return { data: convertSummaryToDisplayFormat(data), source, isSummary: true };
-                    }
                     return { data, source, isSummary: false };
                 }
             } catch (e) {
@@ -241,7 +235,6 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .catch(error => {
             console.error("Failed to load JSON:", error);
-            console.error("Please verify data_summary.json or final_result.json exists in pipeline/output/ folder");
         });
 });
 

@@ -160,8 +160,9 @@
   <!-- Section: Student Review Summary -->
   <h2 class="section-title">📝 Student Review Summary</h2>
   <div class="section-description">
-    <strong>Review Summary:</strong> Browse and search all student review comments organized by homework assignment.<br>
-    <strong>Filter by Student:</strong> Select a student to view all their review comments.<br>
+    <strong>Review Summary:</strong> View each student's review activity organized by homework assignment.<br>
+    <strong>📤 Reviews Given:</strong> Comments this student wrote to review other students' work.<br>
+    <strong>📥 Reviews Received:</strong> Feedback this student received from peer reviewers.<br>
     <strong>Quality Labels:</strong> 
     <span class="label-tag relevance">R</span> Relevance | 
     <span class="label-tag concreteness">C</span> Concreteness | 
@@ -383,57 +384,94 @@
             const hwData = data[hwName] || [];
             hwData.forEach(assignment => {
                 const reviewer = assignment.Reviewer_Name || assignment.reviewer;
-                if (!reviewer) return;
+                const author = assignment.Author_Name || assignment.author;
                 
-                if (!studentMap.has(reviewer)) {
+                // Initialize reviewer if not exists
+                if (reviewer && !studentMap.has(reviewer)) {
                     studentMap.set(reviewer, {
                         id: reviewer,
-                        reviews: {},
-                        totalReviews: 0,
+                        reviewsGiven: {},      // Reviews this student gave to others
+                        reviewsReceived: {},   // Reviews this student received from others
+                        totalGiven: 0,
+                        totalReceived: 0,
                         assignedTasks: 0,
                         completedTasks: 0,
                         labels: { relevance: 0, concreteness: 0, constructive: 0 }
                     });
                 }
                 
-                const student = studentMap.get(reviewer);
-                
-                // Initialize homework entry if not exists
-                if (!student.reviews[hwName]) {
-                    student.reviews[hwName] = [];
+                // Initialize author if not exists
+                if (author && author !== "NULL" && !studentMap.has(author)) {
+                    studentMap.set(author, {
+                        id: author,
+                        reviewsGiven: {},
+                        reviewsReceived: {},
+                        totalGiven: 0,
+                        totalReceived: 0,
+                        assignedTasks: 0,
+                        completedTasks: 0,
+                        labels: { relevance: 0, concreteness: 0, constructive: 0 }
+                    });
                 }
                 
-                student.assignedTasks++;
-                
-                // Process rounds
-                if (assignment.Round && assignment.Round.length > 0) {
-                    let hasValidFeedback = false;
-                    assignment.Round.forEach(round => {
-                        const feedback = round.Feedback || round.feedback || "";
-                        if (feedback.trim()) {
-                            hasValidFeedback = true;
-                            student.totalReviews++;
-                            
-                            // Get labels
-                            const relevance = round.Relevance || round.relevance || 0;
-                            const concreteness = round.Concreteness || round.concreteness || 0;
-                            const constructive = round.Constructive || round.constructive || 0;
-                            
-                            if (relevance === 1) student.labels.relevance++;
-                            if (concreteness === 1) student.labels.concreteness++;
-                            if (constructive === 1) student.labels.constructive++;
-                            
-                            student.reviews[hwName].push({
-                                author: assignment.Author_Name || assignment.author || "Unknown",
-                                feedback: feedback,
-                                time: round.Time || round.time || "",
-                                relevance,
-                                concreteness,
-                                constructive
-                            });
-                        }
-                    });
-                    if (hasValidFeedback) student.completedTasks++;
+                // Process reviewer's given reviews
+                if (reviewer) {
+                    const reviewerStudent = studentMap.get(reviewer);
+                    
+                    // Initialize homework entry if not exists
+                    if (!reviewerStudent.reviewsGiven[hwName]) {
+                        reviewerStudent.reviewsGiven[hwName] = [];
+                    }
+                    
+                    reviewerStudent.assignedTasks++;
+                    
+                    // Process rounds for reviews given
+                    if (assignment.Round && assignment.Round.length > 0) {
+                        let hasValidFeedback = false;
+                        assignment.Round.forEach(round => {
+                            const feedback = round.Feedback || round.feedback || "";
+                            if (feedback.trim()) {
+                                hasValidFeedback = true;
+                                reviewerStudent.totalGiven++;
+                                
+                                // Get labels
+                                const relevance = round.Relevance || round.relevance || 0;
+                                const concreteness = round.Concreteness || round.concreteness || 0;
+                                const constructive = round.Constructive || round.constructive || 0;
+                                
+                                if (relevance === 1) reviewerStudent.labels.relevance++;
+                                if (concreteness === 1) reviewerStudent.labels.concreteness++;
+                                if (constructive === 1) reviewerStudent.labels.constructive++;
+                                
+                                reviewerStudent.reviewsGiven[hwName].push({
+                                    to: author || "Unknown",
+                                    feedback: feedback,
+                                    time: round.Time || round.time || "",
+                                    relevance,
+                                    concreteness,
+                                    constructive
+                                });
+                                
+                                // Also add to author's received reviews
+                                if (author && author !== "NULL" && studentMap.has(author)) {
+                                    const authorStudent = studentMap.get(author);
+                                    if (!authorStudent.reviewsReceived[hwName]) {
+                                        authorStudent.reviewsReceived[hwName] = [];
+                                    }
+                                    authorStudent.totalReceived++;
+                                    authorStudent.reviewsReceived[hwName].push({
+                                        from: reviewer,
+                                        feedback: feedback,
+                                        time: round.Time || round.time || "",
+                                        relevance,
+                                        concreteness,
+                                        constructive
+                                    });
+                                }
+                            }
+                        });
+                        if (hasValidFeedback) reviewerStudent.completedTasks++;
+                    }
                 }
             });
         });
@@ -454,16 +492,17 @@
     // Update summary statistics
     function updateSummaryStats(students) {
         const totalStudents = students.length;
-        const totalReviews = students.reduce((sum, s) => sum + s.totalReviews, 0);
+        const totalGiven = students.reduce((sum, s) => sum + s.totalGiven, 0);
+        const totalReceived = students.reduce((sum, s) => sum + s.totalReceived, 0);
         const avgParticipation = totalStudents > 0 
             ? students.reduce((sum, s) => sum + (s.assignedTasks > 0 ? s.completedTasks / s.assignedTasks : 0), 0) / totalStudents * 100 
             : 0;
-        const avgQuality = totalReviews > 0
-            ? students.reduce((sum, s) => sum + s.labels.relevance + s.labels.concreteness + s.labels.constructive, 0) / (totalReviews * 3) * 100
+        const avgQuality = totalGiven > 0
+            ? students.reduce((sum, s) => sum + s.labels.relevance + s.labels.concreteness + s.labels.constructive, 0) / (totalGiven * 3) * 100
             : 0;
         
         document.getElementById('totalStudents').textContent = totalStudents;
-        document.getElementById('totalReviews').textContent = totalReviews.toLocaleString();
+        document.getElementById('totalReviews').textContent = totalGiven.toLocaleString();
         document.getElementById('avgParticipation').textContent = avgParticipation.toFixed(1) + '%';
         document.getElementById('avgQuality').textContent = avgQuality.toFixed(1) + '%';
     }
@@ -487,9 +526,12 @@
                 ? (student.completedTasks / student.assignedTasks * 100).toFixed(1) 
                 : 0;
             
-            // Get homework tabs with reviews
-            const hwWithReviews = hwKeys.filter(hw => student.reviews[hw] && student.reviews[hw].length > 0);
-            const activeHw = hwWithReviews[0] || hwKeys[0];
+            // Get homework tabs with reviews (either given or received)
+            const hwWithActivity = hwKeys.filter(hw => 
+                (student.reviewsGiven[hw] && student.reviewsGiven[hw].length > 0) ||
+                (student.reviewsReceived[hw] && student.reviewsReceived[hw].length > 0)
+            );
+            const activeHw = hwWithActivity[0] || hwKeys[0];
             
             return `
                 <div class="student-card" data-student-id="${student.id}">
@@ -497,7 +539,7 @@
                         <div class="student-info">
                             <h3>👤 ${student.id}</h3>
                             <div class="student-meta">
-                                ${student.totalReviews} reviews across ${hwWithReviews.length} assignments
+                                📤 ${student.totalGiven} given | 📥 ${student.totalReceived} received
                             </div>
                         </div>
                         <div class="student-stats-mini">
@@ -505,25 +547,30 @@
                                 <div class="value">${participationRate}%</div>
                                 <div class="label">Participation</div>
                             </div>
-                            <div class="mini-stat">
-                                <div class="value">${student.totalReviews}</div>
-                                <div class="label">Reviews</div>
+                            <div class="mini-stat given">
+                                <div class="value">${student.totalGiven}</div>
+                                <div class="label">Given</div>
+                            </div>
+                            <div class="mini-stat received">
+                                <div class="value">${student.totalReceived}</div>
+                                <div class="label">Received</div>
                             </div>
                         </div>
                     </div>
                     <div class="hw-tabs">
                         ${hwKeys.map(hw => {
-                            const count = student.reviews[hw]?.length || 0;
+                            const givenCount = student.reviewsGiven[hw]?.length || 0;
+                            const receivedCount = student.reviewsReceived[hw]?.length || 0;
                             return `
                                 <button class="hw-tab ${hw === activeHw ? 'active' : ''}" 
                                         data-hw="${hw}" data-student="${student.id}">
-                                    ${hw} <span class="review-count">${count}</span>
+                                    ${hw} <span class="review-count">${givenCount}/${receivedCount}</span>
                                 </button>
                             `;
                         }).join('')}
                     </div>
                     <div class="hw-review-content" data-student="${student.id}">
-                        ${renderReviewsList(student.reviews[activeHw] || [])}
+                        ${renderReviewsGivenReceived(student.reviewsGiven[activeHw] || [], student.reviewsReceived[activeHw] || [])}
                     </div>
                 </div>
             `;
@@ -544,46 +591,84 @@
                     
                     // Update content
                     const content = card.querySelector('.hw-review-content');
-                    content.innerHTML = renderReviewsList(student.reviews[hw] || []);
+                    content.innerHTML = renderReviewsGivenReceived(student.reviewsGiven[hw] || [], student.reviewsReceived[hw] || []);
                 }
             });
         });
     }
     
-    // Render reviews list
-    function renderReviewsList(reviews) {
-        if (!reviews || reviews.length === 0) {
-            return `
-                <div class="no-reviews">
-                    <div class="icon">📝</div>
-                    <p>No reviews for this assignment</p>
-                </div>
-            `;
-        }
-        
+    // Render reviews given and received in two columns
+    function renderReviewsGivenReceived(given, received) {
         return `
-            <div class="reviews-list">
-                ${reviews.map(review => {
-                    // Determine primary label
-                    let primaryLabel = '';
-                    let labelClass = '';
-                    if (review.constructive === 1) { primaryLabel = 'Constructive'; labelClass = 'constructive'; }
-                    else if (review.relevance === 1) { primaryLabel = 'Relevance'; labelClass = 'relevance'; }
-                    else if (review.concreteness === 1) { primaryLabel = 'Concreteness'; labelClass = 'concreteness'; }
-                    
-                    return `
-                        <div class="review-item ${labelClass}">
-                            <div class="review-header">
-                                <span class="reviewer-info">To: ${review.author}</span>
-                                <div class="review-meta">
-                                    ${primaryLabel ? `<span class="review-label ${labelClass}">${primaryLabel}</span>` : ''}
-                                    ${review.time ? `<span class="review-time">${review.time}</span>` : ''}
-                                </div>
+            <div class="reviews-dual-panel">
+                <div class="reviews-panel given-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">📤</span>
+                        <span class="panel-title">Reviews Given</span>
+                        <span class="panel-count">${given.length}</span>
+                    </div>
+                    <div class="reviews-list">
+                        ${given.length === 0 ? `
+                            <div class="no-reviews">
+                                <div class="icon">📝</div>
+                                <p>No reviews given</p>
                             </div>
-                            <div class="review-text">${escapeHtml(review.feedback)}</div>
-                        </div>
-                    `;
-                }).join('')}
+                        ` : given.map(review => {
+                            let primaryLabel = '';
+                            let labelClass = '';
+                            if (review.constructive === 1) { primaryLabel = 'Constructive'; labelClass = 'constructive'; }
+                            else if (review.relevance === 1) { primaryLabel = 'Relevance'; labelClass = 'relevance'; }
+                            else if (review.concreteness === 1) { primaryLabel = 'Concreteness'; labelClass = 'concreteness'; }
+                            
+                            return `
+                                <div class="review-item ${labelClass}">
+                                    <div class="review-header">
+                                        <span class="reviewer-info">➡️ To: ${review.to}</span>
+                                        <div class="review-meta">
+                                            ${primaryLabel ? `<span class="review-label ${labelClass}">${primaryLabel}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="review-text">${escapeHtml(review.feedback)}</div>
+                                    ${review.time ? `<div class="review-time-footer">${review.time}</div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+                <div class="reviews-panel received-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">📥</span>
+                        <span class="panel-title">Reviews Received</span>
+                        <span class="panel-count">${received.length}</span>
+                    </div>
+                    <div class="reviews-list">
+                        ${received.length === 0 ? `
+                            <div class="no-reviews">
+                                <div class="icon">📬</div>
+                                <p>No reviews received</p>
+                            </div>
+                        ` : received.map(review => {
+                            let primaryLabel = '';
+                            let labelClass = '';
+                            if (review.constructive === 1) { primaryLabel = 'Constructive'; labelClass = 'constructive'; }
+                            else if (review.relevance === 1) { primaryLabel = 'Relevance'; labelClass = 'relevance'; }
+                            else if (review.concreteness === 1) { primaryLabel = 'Concreteness'; labelClass = 'concreteness'; }
+                            
+                            return `
+                                <div class="review-item ${labelClass}">
+                                    <div class="review-header">
+                                        <span class="reviewer-info">⬅️ From: ${review.from}</span>
+                                        <div class="review-meta">
+                                            ${primaryLabel ? `<span class="review-label ${labelClass}">${primaryLabel}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="review-text">${escapeHtml(review.feedback)}</div>
+                                    ${review.time ? `<div class="review-time-footer">${review.time}</div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -613,7 +698,10 @@
             // Homework filter
             const hwValue = hwFilter?.value || 'all';
             if (hwValue !== 'all') {
-                filtered = filtered.filter(s => s.reviews[hwValue] && s.reviews[hwValue].length > 0);
+                filtered = filtered.filter(s => 
+                    (s.reviewsGiven[hwValue] && s.reviewsGiven[hwValue].length > 0) ||
+                    (s.reviewsReceived[hwValue] && s.reviewsReceived[hwValue].length > 0)
+                );
             }
             
             // Sorting
@@ -621,7 +709,7 @@
             filtered.sort((a, b) => {
                 switch(sortValue) {
                     case 'reviews':
-                        return b.totalReviews - a.totalReviews;
+                        return (b.totalGiven + b.totalReceived) - (a.totalGiven + a.totalReceived);
                     case 'participation':
                         const rateA = a.assignedTasks > 0 ? a.completedTasks / a.assignedTasks : 0;
                         const rateB = b.assignedTasks > 0 ? b.completedTasks / b.assignedTasks : 0;
@@ -660,7 +748,6 @@
             // Try summary first (much faster - ~400KB vs 14MB)
             try {
                 updateProgress(20, '⏳ Loading summary data...');
-                const response = await fetch("./output/data_summary.json");
                 if (response.ok) {
                     updateProgress(50, '⏳ Parsing summary...');
                     const summaryData = await response.json();

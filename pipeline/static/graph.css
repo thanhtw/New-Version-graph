@@ -1225,3 +1225,123 @@ h1 {
         justify-content: flex-start;
     }
 }
+
+/* ========================================
+   Dual Panel Reviews (Given/Received)
+   ======================================== */
+.reviews-dual-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+}
+
+.reviews-panel {
+    background: #fafafa;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.given-panel .panel-header {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+    border-bottom: 2px solid #42a5f5;
+}
+
+.received-panel .panel-header {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e7d32;
+    border-bottom: 2px solid #66bb6a;
+}
+
+.panel-icon {
+    font-size: 20px;
+}
+
+.panel-title {
+    flex: 1;
+}
+
+.panel-count {
+    background: rgba(255,255,255,0.8);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.reviews-panel .reviews-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.reviews-panel .review-item {
+    background: white;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.reviews-panel .review-item:last-child {
+    margin-bottom: 0;
+}
+
+.reviews-panel .review-item.constructive { border-left-color: #28a745; }
+.reviews-panel .review-item.relevance { border-left-color: #17a2b8; }
+.reviews-panel .review-item.concreteness { border-left-color: #ffc107; }
+
+.review-time-footer {
+    font-size: 11px;
+    color: #999;
+    margin-top: 8px;
+    text-align: right;
+}
+
+/* Mini stat colors */
+.mini-stat.given {
+    background: rgba(33, 150, 243, 0.2);
+}
+
+.mini-stat.received {
+    background: rgba(76, 175, 80, 0.2);
+}
+
+/* Responsive for dual panel */
+@media (max-width: 992px) {
+    .reviews-dual-panel {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .reviews-panel .reviews-list {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .reviews-dual-panel {
+        padding: 10px;
+    }
+    
+    .panel-header {
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    .reviews-panel .reviews-list {
+        padding: 10px;
+    }
+}

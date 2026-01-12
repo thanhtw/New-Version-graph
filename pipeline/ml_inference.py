@@ -119,15 +119,6 @@ def run_inference_with_model(input_path: str, output_path: str, model_path: str)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
-    # Generate summary file for fast loading
-    try:
-        from data_summarizer import summarize_data
-        summary_path = Path(output_path).parent / "data_summary.json"
-        print(f"Generating summary file for fast loading...")
-        summarize_data(Path(output_path), summary_path)
-    except Exception as e:
-        print(f"Warning: Could not generate summary: {e}")
-    
     stats = {
         "total_feedbacks": total_feedbacks,
         "homework_count": len(data),
