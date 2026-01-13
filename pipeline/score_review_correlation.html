@@ -36,6 +36,13 @@
         .header-nav {
             display: flex;
             gap: 15px;
+            align-items: center;
+        }
+        
+        .header-nav .user-display {
+            font-size: 0.9em;
+            opacity: 0.9;
+            padding: 10px 15px;
         }
         
         .header-nav a {
@@ -49,6 +56,10 @@
         
         .header-nav a:hover {
             background: rgba(255,255,255,0.3);
+        }
+        
+        .header-nav a.logout {
+            background: rgba(255,50,50,0.7);
         }
         
         .container {
@@ -442,10 +453,40 @@
     <div class="header">
         <h1>📊 Score-Review Correlation Analysis</h1>
         <div class="header-nav">
+            <span class="user-display" id="userDisplay">👤 Loading...</span>
             <a href="/graph.html">📈 Graph View</a>
             <a href="/">← Pipeline</a>
+            <a href="#" class="logout" onclick="logout(); return false;">🚪 Logout</a>
         </div>
     </div>
+    
+    <script>
+        // Check authentication and load user info
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-session');
+                const data = await response.json();
+                if (!data.logged_in) {
+                    window.location.href = '/login';
+                } else {
+                    document.getElementById('userDisplay').textContent = '👤 ' + data.user.name;
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+        
+        async function logout() {
+            try {
+                await fetch('/api/logout');
+                window.location.href = '/login';
+            } catch (error) {
+                window.location.href = '/login';
+            }
+        }
+        
+        checkAuth();
+    </script>
     
     <div class="container">
         <!-- Summary Cards -->

@@ -105,11 +105,41 @@
   <!-- Header -->
   <div class="pipeline-header">
     <h1>📊 Peer Review Quality Analysis Dashboard</h1>
-    <div style="display: flex; gap: 10px;">
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span id="userDisplay" style="font-size: 0.9em; opacity: 0.9;">👤 Loading...</span>
       <a href="/correlation" style="background: rgba(40, 167, 69, 0.8);">📊 Score Analysis</a>
       <a href="/">← Pipeline</a>
+      <a href="#" onclick="logout(); return false;" style="background: rgba(255,50,50,0.7);">🚪 Logout</a>
     </div>
   </div>
+  
+  <script>
+    // Check authentication and load user info
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/check-session');
+        const data = await response.json();
+        if (!data.logged_in) {
+          window.location.href = '/login';
+        } else {
+          document.getElementById('userDisplay').textContent = '👤 ' + data.user.name;
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    }
+    
+    async function logout() {
+      try {
+        await fetch('/api/logout');
+        window.location.href = '/login';
+      } catch (error) {
+        window.location.href = '/login';
+      }
+    }
+    
+    checkAuth();
+  </script>
   
   <!-- Data Status -->
   <div class="data-info" id="data-info">

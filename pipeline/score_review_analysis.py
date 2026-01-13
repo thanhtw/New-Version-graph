@@ -61,8 +61,13 @@ def safe_int(value):
         return 0
 
 
-def load_review_data(result_file=RESULT_FILE):
+def load_review_data(result_file=None):
     """Load peer review data from final_result.json."""
+    if result_file is None:
+        result_file = RESULT_FILE
+    else:
+        result_file = Path(result_file)
+    
     if not result_file.exists():
         print(f"Review data not found: {result_file}")
         return {}
@@ -255,13 +260,21 @@ def calculate_pearson(x, y):
     return round(numerator / denominator, 4)
 
 
-def generate_analysis_report():
-    """Generate complete analysis report."""
+def generate_analysis_report(result_file_path=None):
+    """Generate complete analysis report.
+    
+    Args:
+        result_file_path: Optional path to the final_result.json file.
+                         If None, uses default RESULT_FILE path.
+    """
     print("Loading score data...")
     scores = load_score_data()
     
     print("Loading review data...")
-    review_data = load_review_data()
+    if result_file_path:
+        review_data = load_review_data(Path(result_file_path))
+    else:
+        review_data = load_review_data()
     
     if not scores:
         return {"error": "No score data found"}
