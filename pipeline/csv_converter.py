@@ -4,7 +4,7 @@ CSV to JSON Converter for Review Data Pipeline
 Converts CSV format to JSON format for further processing.
 
 Expected CSV format:
-Author_Name,Reviewer_Name,Feedback,Time,Assignment,Round
+Author,Reviewer,Feedback,Time,Assignment,Round
 
 Note: Author_ID, Reviewer_ID, are auto-generated during conversion.
 """
@@ -27,14 +27,14 @@ def detect_column_names(reader_fieldnames: List[str]) -> dict:
     Detect the correct column names from CSV header.
     Returns a mapping of standard names to actual column names.
     
-    Required columns: Author_Name, Reviewer_Name, Feedback, Time, Assignment, Round
+    Required columns: Author, Reviewer_, Feedback, Time, Assignment, Round
     """
     fieldnames = [f.strip() if f else '' for f in reader_fieldnames]
     fieldnames_lower = [f.lower() for f in fieldnames]
     
     mapping = {
-        'author_name': None,
-        'reviewer_name': None,
+        'author': None,
+        'reviewer': None,
         'feedback': None,
         'time': None,
         'assignment': None,
@@ -43,8 +43,8 @@ def detect_column_names(reader_fieldnames: List[str]) -> dict:
     
     # Map variations to standard names
     variations = {
-        'author_name': ['author_name', 'authorname', 'owner_name', 'ownername', 'author'],
-        'reviewer_name': ['reviewer_name', 'reviewername', 'reviewer'],
+        'author': ['author', 'authorname', 'owner_name', 'ownername', 'author'],
+        'reviewer': ['reviewer', 'reviewername', 'reviewer'],
         'feedback': ['feedback', 'comment', 'review', 'text'],
         'time': ['time', 'timestamp', 'date', 'datetime', 'created_at'],
         'assignment': ['assignment', 'hw', 'homework', 'task'],
@@ -66,8 +66,8 @@ def convert_csv_to_json(csv_path: str, json_path: str) -> dict:
     Convert CSV file to JSON format.
     
     Expected CSV columns (flexible naming):
-    - Author_Name / Owner_name: The student being reviewed
-    - Reviewer_Name / Reviewer_name: The student doing the review
+    - Author / Owner_name: The student being reviewed
+    - Reviewer / Reviewer: The student doing the review
     - Feedback: Review text
     - Assignment: HW1, HW2, etc.
     - Round: Review round number
@@ -94,8 +94,8 @@ def convert_csv_to_json(csv_path: str, json_path: str) -> dict:
     print(f"Found {len(rows)} rows in CSV")
     
     # Get column names (only 6 required columns)
-    author_col = col_map['author_name']
-    reviewer_col = col_map['reviewer_name']
+    author_col = col_map['author']
+    reviewer_col = col_map['reviewer']
     feedback_col = col_map['feedback']
     assignment_col = col_map['assignment']
     round_col = col_map['round']
@@ -103,8 +103,8 @@ def convert_csv_to_json(csv_path: str, json_path: str) -> dict:
     
     if not author_col or not reviewer_col:
         print(f"WARNING: Could not find author/reviewer columns!")
-        print(f"  Looking for Author_Name or Owner_name")
-        print(f"  Looking for Reviewer_Name or Reviewer_name")
+        print(f"  Looking for Author or Owner_name")
+        print(f"  Looking for Reviewer or Reviewer")
     
     # Collect unique names
     for row in rows:
@@ -124,16 +124,16 @@ def convert_csv_to_json(csv_path: str, json_path: str) -> dict:
     
     # Convert rows to records
     for row in rows:
-        author_name = (row.get(author_col, '') if author_col else '') or ''
-        reviewer_name = (row.get(reviewer_col, '') if reviewer_col else '') or ''
+        author = (row.get(author_col, '') if author_col else '') or ''
+        reviewer = (row.get(reviewer_col, '') if reviewer_col else '') or ''
         
         # Skip rows with invalid reviewer (reviewer is required)
-        if not reviewer_name.strip() or reviewer_name.upper() == 'NULL':
+        if not reviewer.strip() or reviewer.upper() == 'NULL':
             continue
         
         # Handle NULL author (keep as NULL, visualization will handle it)
-        if not author_name.strip() or author_name.upper() == 'NULL':
-            author_name = 'NULL'
+        if not author.strip() or author.upper() == 'NULL':
+            author = 'NULL'
         
         feedback = (row.get(feedback_col, '') if feedback_col else '') or ''
         if feedback.upper() == 'NULL':
@@ -147,8 +147,8 @@ def convert_csv_to_json(csv_path: str, json_path: str) -> dict:
        
         
         record = {            
-            "Author_Name": author_name,
-            "Reviewer_Name": reviewer_name,
+            "Author": author,
+            "Reviewer": reviewer,
             "Feedback": feedback,            
             "Time": (row.get(time_col, '') if time_col else '') or '',
             "Assignment": (row.get(assignment_col, '') if assignment_col else '') or '',

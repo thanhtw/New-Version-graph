@@ -21,26 +21,26 @@ def organize_data(input_data: List[Dict]) -> Dict[str, List]:
     """
     assignment_dict = defaultdict(lambda: defaultdict(lambda: {
         "Assignment": "",
-        "Author_Name": "",
-        "Reviewer_Name": "",
+        "Author": "",
+        "Reviewer": "",
         "Round": []
     }))
 
     for record in input_data:
         assignment_name = record.get("Assignment", "Unknown")
-        author_name = record.get("Author_Name", "")
-        reviewer_name = record.get("Reviewer_Name", "")
+        author = record.get("Author", "")
+        reviewer = record.get("Reviewer", "")
         
-        if not author_name or not reviewer_name:
+        if not author or not reviewer:
             continue
 
-        key = (author_name, reviewer_name)
+        key = (author, reviewer)
 
         # Initialize structure
         if not assignment_dict[assignment_name][key]["Assignment"]:
             assignment_dict[assignment_name][key]["Assignment"] = assignment_name
-            assignment_dict[assignment_name][key]["Author_Name"] = author_name
-            assignment_dict[assignment_name][key]["Reviewer_Name"] = reviewer_name
+            assignment_dict[assignment_name][key]["Author"] = author
+            assignment_dict[assignment_name][key]["Reviewer"] = reviewer
 
         # Add Round data
         assignment_dict[assignment_name][key]["Round"].append({

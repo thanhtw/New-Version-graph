@@ -125,8 +125,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     reviewerEdges.forEach(edge => {
                         const assignment = {
                             Assignment: hwName,
-                            Reviewer_Name: reviewerId,
-                            Author_Name: edge.to,
+                            Reviewer: reviewerId,
+                            Author: edge.to,
                             Round: []
                         };
                         
@@ -149,8 +149,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (!edgeMap.has(reviewerId) && reviewerData.validFeedbacks > 0) {
                         const assignment = {
                             Assignment: hwName,
-                            Reviewer_Name: reviewerId,
-                            Author_Name: "NULL",
+                            Reviewer: reviewerId,
+                            Author: "NULL",
                             Round: []
                         };
                         
@@ -171,8 +171,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 for (const [reviewerId, reviewerData] of Object.entries(hwData.reviewers)) {
                     const assignment = {
                         Assignment: hwName,
-                        Reviewer_Name: reviewerId,
-                        Author_Name: reviewerData.authors?.[0] || "NULL",
+                        Reviewer_: reviewerId,
+                        Author: reviewerData.authors?.[0] || "NULL",
                         Round: []
                     };
                     
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     
                     if (reviewerData.authors?.length > 0) {
                         reviewerData.authors.forEach(author => {
-                            result[hwName].push({ ...assignment, Author_Name: author });
+                            result[hwName].push({ ...assignment, Author: author });
                         });
                     } else {
                         result[hwName].push(assignment);
@@ -287,8 +287,8 @@ function prepareNetworkDataForBubbleChart(hwNames) {
         console.log(`Processing ${hwName}, total ${hwData.length} records`);
         
         hwData.forEach(assignment => {
-            const reviewer = assignment.Reviewer_Name || assignment.reviewer;
-            const author = assignment.Author_Name || assignment.author;
+            const reviewer = assignment.Reviewer || assignment.reviewer;
+            const author = assignment.Author || assignment.author;
             
             // Ensure both students are in the data
             [reviewer, author].forEach(studentId => {

@@ -149,6 +149,12 @@
             gap: 25px;
         }
         
+        .chart-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
         .chart-box {
             background: #fafafa;
             border-radius: 10px;
@@ -164,16 +170,20 @@
         }
         
         .chart-box canvas {
-            max-height: 350px;
+            max-height: 300px;
         }
+        
+        .chart-box.relevance { border-left: 4px solid #ffc107; }
+        .chart-box.concreteness { border-left: 4px solid #28a745; }
+        .chart-box.constructive { border-left: 4px solid #9444ca; }
         
         .correlation-badge {
             display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
             font-weight: 600;
-            margin-left: 10px;
+            margin-left: 8px;
         }
         
         .correlation-badge.positive { background: #d4edda; color: #155724; }
@@ -182,43 +192,49 @@
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
             margin-bottom: 20px;
         }
         
         .stat-item {
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             background: #f8f9fa;
             border-radius: 8px;
         }
         
         .stat-item .value {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 700;
             color: #333;
         }
         
         .stat-item .label {
-            font-size: 0.85em;
+            font-size: 0.8em;
             color: #666;
-            margin-top: 5px;
+            margin-top: 3px;
         }
+        
+        .stat-item.relevance { border-left: 3px solid #ffc107; }
+        .stat-item.concreteness { border-left: 3px solid #28a745; }
+        .stat-item.constructive { border-left: 3px solid #9444ca; }
         
         /* Student Table */
         .student-table-container {
             overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
         }
         
         .student-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         
         .student-table th, .student-table td {
-            padding: 12px 15px;
+            padding: 10px 12px;
             text-align: center;
             border-bottom: 1px solid #e9ecef;
         }
@@ -229,10 +245,20 @@
             color: #555;
             position: sticky;
             top: 0;
+            z-index: 10;
+        }
+        
+        .student-table tr {
+            cursor: pointer;
+            transition: background 0.2s;
         }
         
         .student-table tr:hover {
-            background: #f8f9ff;
+            background: #f0f4ff;
+        }
+        
+        .student-table tr.selected {
+            background: #e3f2fd;
         }
         
         .student-table .name-col {
@@ -258,6 +284,116 @@
         .review-badge.given { background: #e3f2fd; color: #1565c0; }
         .review-badge.received { background: #e8f5e9; color: #2e7d32; }
         
+        /* Student Detail Modal */
+        .student-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .student-modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+        }
+        
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .student-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .overview-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .overview-item .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .overview-item .label {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .overview-item.relevance { border-bottom: 4px solid #ffc107; }
+        .overview-item.concreteness { border-bottom: 4px solid #28a745; }
+        .overview-item.constructive { border-bottom: 4px solid #9444ca; }
+        
+        .student-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .student-chart-box {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .student-chart-box h4 {
+            text-align: center;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
         .loading {
             text-align: center;
             padding: 60px;
@@ -281,13 +417,23 @@
             text-align: center;
         }
         
-        @media (max-width: 768px) {
-            .chart-container {
+        @media (max-width: 992px) {
+            .chart-container, .chart-grid-3 {
                 grid-template-columns: 1fr;
             }
             
+            .student-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
             .hw-tabs {
                 justify-content: center;
+            }
+            
+            .student-overview {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -326,10 +472,31 @@
             </div>
         </div>
         
-        <!-- Correlation Charts Section -->
+        <!-- Correlation by Quality Type -->
         <div class="section">
             <div class="section-title">
-                📈 Score vs Review Activity Correlation
+                🎯 Correlation by Quality Type (All HW)
+            </div>
+            <div class="chart-grid-3">
+                <div class="chart-box relevance">
+                    <h3>📙 Relevance vs Score</h3>
+                    <canvas id="relevanceCorrelationChart"></canvas>
+                </div>
+                <div class="chart-box concreteness">
+                    <h3>📗 Concreteness vs Score</h3>
+                    <canvas id="concretenessCorrelationChart"></canvas>
+                </div>
+                <div class="chart-box constructive">
+                    <h3>📕 Constructive vs Score</h3>
+                    <canvas id="constructiveCorrelationChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- HW-specific Analysis -->
+        <div class="section">
+            <div class="section-title">
+                📈 Score vs Review Quality by Homework
             </div>
             
             <div class="hw-tabs" id="hwTabs">
@@ -343,33 +510,37 @@
             </div>
             
             <div class="stats-grid" id="hwStats">
-                <!-- Stats will be populated dynamically -->
+                <!-- Stats populated dynamically -->
             </div>
             
-            <div class="chart-container">
-                <div class="chart-box">
-                    <h3>HW Score vs Reviews Given</h3>
-                    <canvas id="scoreVsGivenChart"></canvas>
+            <div class="chart-grid-3">
+                <div class="chart-box relevance">
+                    <h3>Score vs Relevance %</h3>
+                    <canvas id="hwRelevanceChart"></canvas>
                 </div>
-                <div class="chart-box">
-                    <h3>HW Score vs Review Quality</h3>
-                    <canvas id="scoreVsQualityChart"></canvas>
+                <div class="chart-box concreteness">
+                    <h3>Score vs Concreteness %</h3>
+                    <canvas id="hwConcretenessChart"></canvas>
+                </div>
+                <div class="chart-box constructive">
+                    <h3>Score vs Constructive %</h3>
+                    <canvas id="hwConstructiveChart"></canvas>
                 </div>
             </div>
         </div>
         
-        <!-- Overall Correlation -->
+        <!-- Pearson Correlation Summary -->
         <div class="section">
             <div class="section-title">
-                🔗 Overall Correlation Summary
+                🔗 Pearson Correlation Coefficients by Homework
             </div>
             <div class="chart-container">
                 <div class="chart-box">
-                    <h3>Correlation: Score vs Reviews Given (by HW)</h3>
+                    <h3>Score vs Reviews Given (r)</h3>
                     <canvas id="correlationGivenChart"></canvas>
                 </div>
                 <div class="chart-box">
-                    <h3>Correlation: Score vs Review Quality (by HW)</h3>
+                    <h3>Score vs Quality Labels (r)</h3>
                     <canvas id="correlationQualityChart"></canvas>
                 </div>
             </div>
@@ -378,7 +549,7 @@
         <!-- Student Detail Table -->
         <div class="section">
             <div class="section-title">
-                📋 Student Details
+                📋 Student Details (Click row to see correlation)
             </div>
             <div class="student-table-container">
                 <table class="student-table" id="studentTable">
@@ -386,18 +557,43 @@
                         <tr>
                             <th>ID</th>
                             <th>Name</th>
-                            <th>Avg HW Score</th>
-                            <th>Midterm</th>
-                            <th>Final</th>
-                            <th>Reviews Given</th>
-                            <th>Reviews Received</th>
-                            <th>Quality %</th>
+                            <th>Avg Score</th>
+                            <th>Reviews</th>
+                            <th>Relevance</th>
+                            <th>Concreteness</th>
+                            <th>Constructive</th>
+                            <th>Quality</th>
                         </tr>
                     </thead>
                     <tbody id="studentTableBody">
-                        <!-- Data will be populated dynamically -->
+                        <!-- Data populated dynamically -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Student Detail Modal -->
+    <div class="student-modal" id="studentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalStudentName">Student Details</h2>
+                <button class="modal-close" onclick="closeStudentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="student-overview" id="studentOverview">
+                    <!-- Overview populated dynamically -->
+                </div>
+                <div class="student-charts">
+                    <div class="student-chart-box">
+                        <h4>HW Score vs Quality by Assignment</h4>
+                        <canvas id="studentScoreChart"></canvas>
+                    </div>
+                    <div class="student-chart-box">
+                        <h4>Quality Labels Distribution</h4>
+                        <canvas id="studentQualityChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -406,6 +602,7 @@
         let analysisData = null;
         let currentHW = 'HW1';
         let charts = {};
+        let selectedStudent = null;
         
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -415,11 +612,9 @@
         
         async function loadAnalysisData() {
             try {
-                // First try to load existing analysis
                 let response = await fetch('/output/score_review_analysis.json');
                 
                 if (!response.ok) {
-                    // Run analysis if not exists
                     console.log('Analysis not found, generating...');
                     response = await fetch('/api/run-analysis');
                     if (!response.ok) {
@@ -435,9 +630,10 @@
                 }
                 
                 renderSummary();
+                renderQualityCorrelationCharts();
                 renderHWStats(currentHW);
-                renderScatterCharts(currentHW);
-                renderCorrelationCharts();
+                renderHWScatterCharts(currentHW);
+                renderCorrelationBarCharts();
                 renderStudentTable();
                 
             } catch (error) {
@@ -465,8 +661,13 @@
                     this.classList.add('active');
                     currentHW = this.dataset.hw;
                     renderHWStats(currentHW);
-                    renderScatterCharts(currentHW);
+                    renderHWScatterCharts(currentHW);
                 });
+            });
+            
+            // Close modal on outside click
+            document.getElementById('studentModal').addEventListener('click', function(e) {
+                if (e.target === this) closeStudentModal();
             });
         }
         
@@ -478,27 +679,28 @@
             document.getElementById('activeReviewers').textContent = summary.students_with_reviews;
         }
         
+        function getCorrelationClass(r) {
+            if (r > 0.3) return 'positive';
+            if (r < -0.3) return 'negative';
+            return 'neutral';
+        }
+        
+        function getCorrelationLabel(r) {
+            const abs = Math.abs(r);
+            if (abs < 0.1) return 'Very Weak';
+            if (abs < 0.3) return 'Weak';
+            if (abs < 0.5) return 'Moderate';
+            if (abs < 0.7) return 'Strong';
+            return 'Very Strong';
+        }
+        
         function renderHWStats(hw) {
             const hwData = analysisData.correlations[hw];
             if (!hwData) return;
             
-            const corrGiven = hwData.correlation_given;
-            const corrQuality = hwData.correlation_quality;
-            
-            const getCorrelationClass = (r) => {
-                if (r > 0.3) return 'positive';
-                if (r < -0.3) return 'negative';
-                return 'neutral';
-            };
-            
-            const getCorrelationLabel = (r) => {
-                const abs = Math.abs(r);
-                if (abs < 0.1) return 'Very Weak';
-                if (abs < 0.3) return 'Weak';
-                if (abs < 0.5) return 'Moderate';
-                if (abs < 0.7) return 'Strong';
-                return 'Very Strong';
-            };
+            const corrRelevance = hwData.correlation_relevance || 0;
+            const corrConcreteness = hwData.correlation_concreteness || 0;
+            const corrConstructive = hwData.correlation_constructive || 0;
             
             document.getElementById('hwStats').innerHTML = `
                 <div class="stat-item">
@@ -507,185 +709,262 @@
                 </div>
                 <div class="stat-item">
                     <div class="value">${hwData.stats.avg_given}</div>
-                    <div class="label">Avg Reviews Given</div>
+                    <div class="label">Avg Given</div>
                 </div>
-                <div class="stat-item">
-                    <div class="value">${hwData.stats.avg_quality.toFixed(1)}%</div>
-                    <div class="label">Avg Quality</div>
+                <div class="stat-item relevance">
+                    <div class="value">${corrRelevance.toFixed(3)}</div>
+                    <div class="label">r (Relevance)</div>
                 </div>
-                <div class="stat-item">
-                    <div class="value">
-                        ${corrGiven.toFixed(3)}
-                        <span class="correlation-badge ${getCorrelationClass(corrGiven)}">${getCorrelationLabel(corrGiven)}</span>
-                    </div>
-                    <div class="label">Score-Given Correlation</div>
+                <div class="stat-item concreteness">
+                    <div class="value">${corrConcreteness.toFixed(3)}</div>
+                    <div class="label">r (Concreteness)</div>
                 </div>
-                <div class="stat-item">
-                    <div class="value">
-                        ${corrQuality.toFixed(3)}
-                        <span class="correlation-badge ${getCorrelationClass(corrQuality)}">${getCorrelationLabel(corrQuality)}</span>
-                    </div>
-                    <div class="label">Score-Quality Correlation</div>
+                <div class="stat-item constructive">
+                    <div class="value">${corrConstructive.toFixed(3)}</div>
+                    <div class="label">r (Constructive)</div>
                 </div>
             `;
         }
         
-        function renderScatterCharts(hw) {
+        function renderQualityCorrelationCharts() {
+            const correlations = analysisData.correlations;
+            const hwList = ['HW1', 'HW2', 'HW3', 'HW4', 'HW5', 'HW6', 'HW7'];
+            
+            const relevanceCorr = hwList.map(hw => correlations[hw]?.correlation_relevance || 0);
+            const concretenessCorr = hwList.map(hw => correlations[hw]?.correlation_concreteness || 0);
+            const constructiveCorr = hwList.map(hw => correlations[hw]?.correlation_constructive || 0);
+            
+            // Relevance chart
+            if (charts.relevanceCorr) charts.relevanceCorr.destroy();
+            charts.relevanceCorr = new Chart(document.getElementById('relevanceCorrelationChart'), {
+                type: 'bar',
+                data: {
+                    labels: hwList,
+                    datasets: [{
+                        label: 'Relevance r',
+                        data: relevanceCorr,
+                        backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                        borderColor: '#ffc107',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: -1, max: 1 } }
+                }
+            });
+            
+            // Concreteness chart
+            if (charts.concretenessCorr) charts.concretenessCorr.destroy();
+            charts.concretenessCorr = new Chart(document.getElementById('concretenessCorrelationChart'), {
+                type: 'bar',
+                data: {
+                    labels: hwList,
+                    datasets: [{
+                        label: 'Concreteness r',
+                        data: concretenessCorr,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: '#28a745',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: -1, max: 1 } }
+                }
+            });
+            
+            // Constructive chart
+            if (charts.constructiveCorr) charts.constructiveCorr.destroy();
+            charts.constructiveCorr = new Chart(document.getElementById('constructiveCorrelationChart'), {
+                type: 'bar',
+                data: {
+                    labels: hwList,
+                    datasets: [{
+                        label: 'Constructive r',
+                        data: constructiveCorr,
+                        backgroundColor: 'rgba(148, 68, 202, 0.7)',
+                        borderColor: '#9444ca',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: -1, max: 1 } }
+                }
+            });
+        }
+        
+        function renderHWScatterCharts(hw) {
             const hwData = analysisData.correlations[hw];
             if (!hwData) return;
             
             const dataPoints = hwData.data_points;
             
-            // Score vs Given Chart
-            if (charts.scoreVsGiven) charts.scoreVsGiven.destroy();
-            charts.scoreVsGiven = new Chart(document.getElementById('scoreVsGivenChart'), {
+            // Relevance scatter
+            if (charts.hwRelevance) charts.hwRelevance.destroy();
+            charts.hwRelevance = new Chart(document.getElementById('hwRelevanceChart'), {
                 type: 'scatter',
                 data: {
                     datasets: [{
                         label: 'Students',
-                        data: dataPoints.map(d => ({ x: d.hw_score, y: d.reviews_given, name: d.name })),
-                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
+                        data: dataPoints.map(d => ({ x: d.hw_score, y: d.relevance_score || 0 })),
+                        backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                        borderColor: '#ffc107',
+                        pointRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
                     plugins: {
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
-                                    const point = dataPoints[ctx.dataIndex];
-                                    return `${point.name}: Score=${point.hw_score}, Given=${point.reviews_given}`;
+                                    const p = dataPoints[ctx.dataIndex];
+                                    return `${p.name}: Score=${p.hw_score}, Rel=${p.relevance_score || 0}%`;
                                 }
                             }
-                        },
-                        legend: { display: false }
+                        }
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'HW Score' },
-                            min: 0,
-                            max: 100
-                        },
-                        y: {
-                            title: { display: true, text: 'Reviews Given' },
-                            beginAtZero: true
-                        }
+                        x: { title: { display: true, text: 'HW Score' }, min: 0, max: 100 },
+                        y: { title: { display: true, text: 'Relevance %' }, min: 0, max: 100 }
                     }
                 }
             });
             
-            // Score vs Quality Chart
-            if (charts.scoreVsQuality) charts.scoreVsQuality.destroy();
-            charts.scoreVsQuality = new Chart(document.getElementById('scoreVsQualityChart'), {
+            // Concreteness scatter
+            if (charts.hwConcreteness) charts.hwConcreteness.destroy();
+            charts.hwConcreteness = new Chart(document.getElementById('hwConcretenessChart'), {
                 type: 'scatter',
                 data: {
                     datasets: [{
                         label: 'Students',
-                        data: dataPoints.map(d => ({ x: d.hw_score, y: d.quality_score })),
+                        data: dataPoints.map(d => ({ x: d.hw_score, y: d.concreteness_score || 0 })),
                         backgroundColor: 'rgba(40, 167, 69, 0.6)',
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
+                        borderColor: '#28a745',
+                        pointRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
                     plugins: {
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
-                                    const point = dataPoints[ctx.dataIndex];
-                                    return `${point.name}: Score=${point.hw_score}, Quality=${point.quality_score}%`;
+                                    const p = dataPoints[ctx.dataIndex];
+                                    return `${p.name}: Score=${p.hw_score}, Con=${p.concreteness_score || 0}%`;
                                 }
                             }
-                        },
-                        legend: { display: false }
+                        }
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'HW Score' },
-                            min: 0,
-                            max: 100
-                        },
-                        y: {
-                            title: { display: true, text: 'Review Quality %' },
-                            min: 0,
-                            max: 100
+                        x: { title: { display: true, text: 'HW Score' }, min: 0, max: 100 },
+                        y: { title: { display: true, text: 'Concreteness %' }, min: 0, max: 100 }
+                    }
+                }
+            });
+            
+            // Constructive scatter
+            if (charts.hwConstructive) charts.hwConstructive.destroy();
+            charts.hwConstructive = new Chart(document.getElementById('hwConstructiveChart'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Students',
+                        data: dataPoints.map(d => ({ x: d.hw_score, y: d.constructive_score || 0 })),
+                        backgroundColor: 'rgba(148, 68, 202, 0.6)',
+                        borderColor: '#9444ca',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const p = dataPoints[ctx.dataIndex];
+                                    return `${p.name}: Score=${p.hw_score}, Const=${p.constructive_score || 0}%`;
+                                }
+                            }
                         }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'HW Score' }, min: 0, max: 100 },
+                        y: { title: { display: true, text: 'Constructive %' }, min: 0, max: 100 }
                     }
                 }
             });
         }
         
-        function renderCorrelationCharts() {
+        function renderCorrelationBarCharts() {
             const correlations = analysisData.correlations;
             const hwList = ['HW1', 'HW2', 'HW3', 'HW4', 'HW5', 'HW6', 'HW7'];
             
-            const givenCorrelations = hwList.map(hw => correlations[hw]?.correlation_given || 0);
-            const qualityCorrelations = hwList.map(hw => correlations[hw]?.correlation_quality || 0);
+            const givenCorr = hwList.map(hw => correlations[hw]?.correlation_given || 0);
             
-            // Correlation Given Chart
+            // Given correlation chart
             if (charts.correlationGiven) charts.correlationGiven.destroy();
             charts.correlationGiven = new Chart(document.getElementById('correlationGivenChart'), {
                 type: 'bar',
                 data: {
                     labels: hwList,
                     datasets: [{
-                        label: 'Correlation (r)',
-                        data: givenCorrelations,
-                        backgroundColor: givenCorrelations.map(r => r >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
-                        borderColor: givenCorrelations.map(r => r >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'),
+                        label: 'Score vs Given (r)',
+                        data: givenCorr,
+                        backgroundColor: givenCorr.map(r => r >= 0 ? 'rgba(102, 126, 234, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
+                        borderColor: givenCorr.map(r => r >= 0 ? '#667eea' : '#dc3545'),
                         borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            min: -1,
-                            max: 1,
-                            title: { display: true, text: 'Correlation Coefficient (r)' }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: -1, max: 1, title: { display: true, text: 'Correlation (r)' } } }
                 }
             });
             
-            // Correlation Quality Chart
+            // Quality labels correlation chart
             if (charts.correlationQuality) charts.correlationQuality.destroy();
             charts.correlationQuality = new Chart(document.getElementById('correlationQualityChart'), {
                 type: 'bar',
                 data: {
                     labels: hwList,
-                    datasets: [{
-                        label: 'Correlation (r)',
-                        data: qualityCorrelations,
-                        backgroundColor: qualityCorrelations.map(r => r >= 0 ? 'rgba(102, 126, 234, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
-                        borderColor: qualityCorrelations.map(r => r >= 0 ? 'rgba(102, 126, 234, 1)' : 'rgba(220, 53, 69, 1)'),
-                        borderWidth: 2
-                    }]
+                    datasets: [
+                        {
+                            label: 'Relevance',
+                            data: hwList.map(hw => correlations[hw]?.correlation_relevance || 0),
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: '#ffc107',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Concreteness',
+                            data: hwList.map(hw => correlations[hw]?.correlation_concreteness || 0),
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: '#28a745',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Constructive',
+                            data: hwList.map(hw => correlations[hw]?.correlation_constructive || 0),
+                            backgroundColor: 'rgba(148, 68, 202, 0.7)',
+                            borderColor: '#9444ca',
+                            borderWidth: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            min: -1,
-                            max: 1,
-                            title: { display: true, text: 'Correlation Coefficient (r)' }
-                        }
-                    }
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { min: -1, max: 1, title: { display: true, text: 'Correlation (r)' } } }
                 }
             });
         }
@@ -695,23 +974,156 @@
             const tbody = document.getElementById('studentTableBody');
             
             const getScoreClass = (score) => {
-                if (score >= 80) return 'high';
-                if (score >= 60) return 'medium';
+                if (score >= 70) return 'high';
+                if (score >= 50) return 'medium';
                 return 'low';
             };
             
             tbody.innerHTML = students.map(s => `
-                <tr>
+                <tr onclick="showStudentDetail('${s.id}')">
                     <td>${s.id}</td>
                     <td class="name-col">${s.name}</td>
                     <td class="score-cell ${getScoreClass(s.avg_hw_score)}">${s.avg_hw_score}</td>
-                    <td class="score-cell ${getScoreClass(s.midterm)}">${s.midterm}</td>
-                    <td class="score-cell ${getScoreClass(s.final)}">${s.final}</td>
-                    <td><span class="review-badge given">${s.reviews_given}</span></td>
-                    <td><span class="review-badge received">${s.reviews_received}</span></td>
+                    <td>${s.reviews_given}</td>
+                    <td class="score-cell ${getScoreClass(s.relevance_score || 0)}">${s.relevance_score || 0}%</td>
+                    <td class="score-cell ${getScoreClass(s.concreteness_score || 0)}">${s.concreteness_score || 0}%</td>
+                    <td class="score-cell ${getScoreClass(s.constructive_score || 0)}">${s.constructive_score || 0}%</td>
                     <td class="score-cell ${getScoreClass(s.quality_score)}">${s.quality_score}%</td>
                 </tr>
             `).join('');
+        }
+        
+        function showStudentDetail(studentId) {
+            const student = analysisData.students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            selectedStudent = student;
+            
+            // Update modal header
+            document.getElementById('modalStudentName').textContent = `👤 ${student.name} (${student.id})`;
+            
+            // Update overview
+            document.getElementById('studentOverview').innerHTML = `
+                <div class="overview-item">
+                    <div class="value">${student.avg_hw_score}</div>
+                    <div class="label">Avg HW Score</div>
+                </div>
+                <div class="overview-item">
+                    <div class="value">${student.reviews_given}</div>
+                    <div class="label">Reviews Given</div>
+                </div>
+                <div class="overview-item relevance">
+                    <div class="value">${student.relevance_score || 0}%</div>
+                    <div class="label">Relevance</div>
+                </div>
+                <div class="overview-item concreteness">
+                    <div class="value">${student.concreteness_score || 0}%</div>
+                    <div class="label">Concreteness</div>
+                </div>
+                <div class="overview-item constructive">
+                    <div class="value">${student.constructive_score || 0}%</div>
+                    <div class="label">Constructive</div>
+                </div>
+                <div class="overview-item">
+                    <div class="value">${student.quality_score}%</div>
+                    <div class="label">Overall Quality</div>
+                </div>
+            `;
+            
+            // Render student charts
+            renderStudentCharts(student);
+            
+            // Show modal
+            document.getElementById('studentModal').classList.add('show');
+        }
+        
+        function renderStudentCharts(student) {
+            const hwList = ['HW1', 'HW2', 'HW3', 'HW4', 'HW5', 'HW6', 'HW7'];
+            const hwScores = hwList.map(hw => student.hw_scores ? student.hw_scores[hw] || 0 : 0);
+            const hwQuality = hwList.map(hw => student.hw_activity && student.hw_activity[hw] ? student.hw_activity[hw].quality || 0 : 0);
+            const hwRelevance = hwList.map(hw => student.hw_activity && student.hw_activity[hw] ? student.hw_activity[hw].relevance || 0 : 0);
+            const hwConcreteness = hwList.map(hw => student.hw_activity && student.hw_activity[hw] ? student.hw_activity[hw].concreteness || 0 : 0);
+            const hwConstructive = hwList.map(hw => student.hw_activity && student.hw_activity[hw] ? student.hw_activity[hw].constructive || 0 : 0);
+            
+            // Score vs Quality chart
+            if (charts.studentScore) charts.studentScore.destroy();
+            charts.studentScore = new Chart(document.getElementById('studentScoreChart'), {
+                type: 'line',
+                data: {
+                    labels: hwList,
+                    datasets: [
+                        {
+                            label: 'HW Score',
+                            data: hwScores,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Quality %',
+                            data: hwQuality,
+                            borderColor: '#28a745',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: 'Score' } },
+                        y1: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'Quality %' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+            
+            // Quality breakdown radar chart
+            if (charts.studentQuality) charts.studentQuality.destroy();
+            charts.studentQuality = new Chart(document.getElementById('studentQualityChart'), {
+                type: 'radar',
+                data: {
+                    labels: hwList,
+                    datasets: [
+                        {
+                            label: 'Relevance',
+                            data: hwRelevance,
+                            borderColor: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                            pointBackgroundColor: '#ffc107'
+                        },
+                        {
+                            label: 'Concreteness',
+                            data: hwConcreteness,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                            pointBackgroundColor: '#28a745'
+                        },
+                        {
+                            label: 'Constructive',
+                            data: hwConstructive,
+                            borderColor: '#9444ca',
+                            backgroundColor: 'rgba(148, 68, 202, 0.2)',
+                            pointBackgroundColor: '#9444ca'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: { min: 0, max: 100, ticks: { stepSize: 25 } }
+                    }
+                }
+            });
+        }
+        
+        function closeStudentModal() {
+            document.getElementById('studentModal').classList.remove('show');
+            selectedStudent = null;
         }
     </script>
 </body>

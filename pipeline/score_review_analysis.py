@@ -90,8 +90,8 @@ def analyze_review_activity(review_data):
             continue
             
         for assignment in assignments:
-            reviewer = assignment.get('Reviewer_Name') or assignment.get('reviewer', '')
-            author = assignment.get('Author_Name') or assignment.get('author', '')
+            reviewer = assignment.get('Reviewer') or assignment.get('reviewer', '')
+            author = assignment.get('Author') or assignment.get('author', '')
             rounds = assignment.get('Round', [])
             
             if not reviewer:
@@ -159,15 +159,24 @@ def calculate_correlations(scores, review_activity):
                 given_count = len(activity['reviews_given'].get(hw, []))
                 received_count = len(activity['reviews_received'].get(hw, []))
                 
-                # Calculate quality scores for given reviews in this HW
+                # Calculate individual quality scores for given reviews in this HW
                 given_reviews = activity['reviews_given'].get(hw, [])
                 quality_score = 0
+                relevance_score = 0
+                concreteness_score = 0
+                constructive_score = 0
+                
                 if given_reviews:
                     total_quality = sum(
                         r['relevance'] + r['concreteness'] + r['constructive'] 
                         for r in given_reviews
                     )
                     quality_score = total_quality / (len(given_reviews) * 3) * 100
+                    
+                    # Individual label percentages
+                    relevance_score = sum(r['relevance'] for r in given_reviews) / len(given_reviews) * 100
+                    concreteness_score = sum(r['concreteness'] for r in given_reviews) / len(given_reviews) * 100
+                    constructive_score = sum(r['constructive'] for r in given_reviews) / len(given_reviews) * 100
                 
                 data_points.append({
                     'student_id': student_id,
@@ -175,7 +184,10 @@ def calculate_correlations(scores, review_activity):
                     'hw_score': hw_score,
                     'reviews_given': given_count,
                     'reviews_received': received_count,
-                    'quality_score': round(quality_score, 2)
+                    'quality_score': round(quality_score, 2),
+                    'relevance_score': round(relevance_score, 2),
+                    'concreteness_score': round(concreteness_score, 2),
+                    'constructive_score': round(constructive_score, 2)
                 })
             else:
                 data_points.append({
@@ -184,7 +196,10 @@ def calculate_correlations(scores, review_activity):
                     'hw_score': hw_score,
                     'reviews_given': 0,
                     'reviews_received': 0,
-                    'quality_score': 0
+                    'quality_score': 0,
+                    'relevance_score': 0,
+                    'concreteness_score': 0,
+                    'constructive_score': 0
                 })
         
         # Calculate correlation coefficient (Pearson)
@@ -192,15 +207,24 @@ def calculate_correlations(scores, review_activity):
             hw_scores = [d['hw_score'] for d in data_points]
             given_counts = [d['reviews_given'] for d in data_points]
             quality_scores = [d['quality_score'] for d in data_points]
+            relevance_scores = [d['relevance_score'] for d in data_points]
+            concreteness_scores = [d['concreteness_score'] for d in data_points]
+            constructive_scores = [d['constructive_score'] for d in data_points]
             
             hw_correlations[hw] = {
                 'data_points': data_points,
                 'correlation_given': calculate_pearson(hw_scores, given_counts),
                 'correlation_quality': calculate_pearson(hw_scores, quality_scores),
+                'correlation_relevance': calculate_pearson(hw_scores, relevance_scores),
+                'correlation_concreteness': calculate_pearson(hw_scores, concreteness_scores),
+                'correlation_constructive': calculate_pearson(hw_scores, constructive_scores),
                 'stats': {
                     'avg_score': round(statistics.mean(hw_scores), 2),
                     'avg_given': round(statistics.mean(given_counts), 2),
                     'avg_quality': round(statistics.mean(quality_scores), 2),
+                    'avg_relevance': round(statistics.mean(relevance_scores), 2),
+                    'avg_concreteness': round(statistics.mean(concreteness_scores), 2),
+                    'avg_constructive': round(statistics.mean(constructive_scores), 2),
                     'std_score': round(statistics.stdev(hw_scores), 2) if len(hw_scores) > 1 else 0,
                     'total_students': len(data_points)
                 }
@@ -273,17 +297,42 @@ def generate_analysis_report():
         # Calculate overall quality score
         total_given = activity['total_given']
         quality_pct = 0
+        relevance_pct = 0
+        concreteness_pct = 0
+        constructive_pct = 0
+        
         if total_given > 0:
-            quality_sum = (
-                activity['quality_given']['relevance'] +
-                activity['quality_given']['concreteness'] +
-                activity['quality_given']['constructive']
-            )
-            quality_pct = round(quality_sum / (total_given * 3) * 100, 2)
+            relevance_pct = round(activity['quality_given']['relevance'] / total_given * 100, 2)
+            concreteness_pct = round(activity['quality_given']['concreteness'] / total_given * 100, 2)
+            constructive_pct = round(activity['quality_given']['constructive'] / total_given * 100, 2)
+            quality_pct = round((relevance_pct + concreteness_pct + constructive_pct) / 3, 2)
         
         # Calculate average HW score
         hw_scores = list(score_data['hw_scores'].values())
         avg_hw_score = round(sum(hw_scores) / len(hw_scores), 2) if hw_scores else 0
+        
+        # Calculate per-HW quality breakdown
+        hw_quality = {}
+        for hw in ['HW1', 'HW2', 'HW3', 'HW4', 'HW5', 'HW6', 'HW7']:
+            given_reviews = activity['reviews_given'].get(hw, [])
+            if given_reviews:
+                hw_quality[hw] = {
+                    'given': len(given_reviews),
+                    'received': len(activity['reviews_received'].get(hw, [])),
+                    'relevance': round(sum(r['relevance'] for r in given_reviews) / len(given_reviews) * 100, 2),
+                    'concreteness': round(sum(r['concreteness'] for r in given_reviews) / len(given_reviews) * 100, 2),
+                    'constructive': round(sum(r['constructive'] for r in given_reviews) / len(given_reviews) * 100, 2),
+                    'quality': round(sum(r['relevance'] + r['concreteness'] + r['constructive'] for r in given_reviews) / (len(given_reviews) * 3) * 100, 2)
+                }
+            else:
+                hw_quality[hw] = {
+                    'given': 0,
+                    'received': len(activity['reviews_received'].get(hw, [])),
+                    'relevance': 0,
+                    'concreteness': 0,
+                    'constructive': 0,
+                    'quality': 0
+                }
         
         student_details.append({
             'id': student_id,
@@ -295,14 +344,11 @@ def generate_analysis_report():
             'reviews_given': activity['total_given'],
             'reviews_received': activity['total_received'],
             'quality_score': quality_pct,
+            'relevance_score': relevance_pct,
+            'concreteness_score': concreteness_pct,
+            'constructive_score': constructive_pct,
             'quality_breakdown': activity['quality_given'],
-            'hw_activity': {
-                hw: {
-                    'given': len(activity['reviews_given'].get(hw, [])),
-                    'received': len(activity['reviews_received'].get(hw, []))
-                }
-                for hw in ['HW1', 'HW2', 'HW3', 'HW4', 'HW5', 'HW6', 'HW7']
-            }
+            'hw_activity': hw_quality
         })
     
     # Sort by student ID

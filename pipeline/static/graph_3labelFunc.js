@@ -24,7 +24,7 @@ export function updateNetworkInstance(container, data, options, rawData) {
             const selectedHWs = Array.from(document.getElementById('hw-select').selectedOptions)
                                     .map(opt => opt.value);
             const reviewerRecords = selectedHWs.flatMap(hwName => 
-                rawData[hwName]?.filter(a => a.Reviewer_Name === nodeId) || []
+                rawData[hwName]?.filter(a => a.Reviewer === nodeId) || []
             );
             
             // Calculate statistics for the modal
@@ -47,7 +47,7 @@ function calculateStudentStats(nodeId, reviewerRecords) {
     reviewerRecords.forEach(record => {
         const rounds = record.Round || [];
         let hasValidFeedback = false;
-        const authorName = record.Author_Name || 'Unknown';
+        const authorName = record.Author || 'Unknown';
         
         rounds.forEach(round => {
             const feedback = round.Feedback || '';

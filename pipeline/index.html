@@ -439,6 +439,10 @@
                         <span>ML Inference</span>
                     </div>
                     <div class="step-item" id="step4">
+                        <div class="step-icon">📊</div>
+                        <span>Analysis</span>
+                    </div>
+                    <div class="step-item" id="step5">
                         <div class="step-icon">✅</div>
                         <span>Complete</span>
                     </div>
@@ -451,9 +455,12 @@
         <div class="card result-section" id="resultSection">
             <h2>✅ Pipeline Complete!</h2>
             <div class="result-stats" id="resultStats"></div>
-            <p style="text-align: center; margin-top: 20px;">
+            <p style="text-align: center; margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <a href="/graph" class="view-graph-btn" target="_blank">
                     📈 View Graph Visualization
+                </a>
+                <a href="/correlation" class="view-graph-btn" target="_blank" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    📊 Score-Review Correlation
                 </a>
             </p>
         </div>
@@ -610,11 +617,11 @@
         
         // Update Progress UI
         function updateProgress(step, message) {
-            const progress = (step / 4) * 100;
+            const progress = (step / 5) * 100;
             progressFill.style.width = progress + '%';
             
             // Update step indicators
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const stepEl = document.getElementById('step' + i);
                 stepEl.classList.remove('active', 'completed');
                 
@@ -642,7 +649,7 @@
             statusMessage.className = 'status-message success';
             
             // Mark all steps as completed
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 5; i++) {
                 document.getElementById('step' + i).classList.add('completed');
             }
             progressFill.style.width = '100%';
@@ -678,6 +685,15 @@
                         <div class="stat-box">
                             <div class="value">${result.step3.total_feedbacks || 0}</div>
                             <div class="label">Feedbacks Labeled</div>
+                        </div>
+                    `;
+                }
+                
+                if (result.step4) {
+                    statsHtml += `
+                        <div class="stat-box">
+                            <div class="value">${result.step4.total_students || 0}</div>
+                            <div class="label">Students Analyzed</div>
                         </div>
                     `;
                 }

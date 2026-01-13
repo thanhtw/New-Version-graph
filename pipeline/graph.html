@@ -386,8 +386,8 @@
         hwKeys.forEach(hwName => {
             const hwData = data[hwName] || [];
             hwData.forEach(assignment => {
-                const reviewer = assignment.Reviewer_Name || assignment.reviewer;
-                const author = assignment.Author_Name || assignment.author;
+                const reviewer = assignment.Reviewer || assignment.reviewer;
+                const author = assignment.Author || assignment.author;
                 
                 // Initialize reviewer if not exists
                 if (reviewer && !studentMap.has(reviewer)) {
@@ -808,8 +808,8 @@
                         reviewerEdges.forEach(edge => {
                             const assignment = {
                                 Assignment: hwName,
-                                Reviewer_Name: reviewerId,
-                                Author_Name: edge.to,
+                                Reviewer: reviewerId,
+                                Author: edge.to,
                                 Round: []
                             };
                             
@@ -837,8 +837,8 @@
                             // Reviewer with feedback but no author - create self-referencing record
                             const assignment = {
                                 Assignment: hwName,
-                                Reviewer_Name: reviewerId,
-                                Author_Name: "NULL",
+                                Reviewer: reviewerId,
+                                Author: "NULL",
                                 Round: []
                             };
                             
@@ -861,8 +861,8 @@
                         // Create a simplified assignment record for each reviewer
                         const assignment = {
                             Assignment: hwName,
-                            Reviewer_Name: reviewerId,
-                            Author_Name: reviewerData.authors[0] || "NULL",
+                            Reviewer: reviewerId,
+                            Author: reviewerData.authors[0] || "NULL",
                             Round: []
                         };
                         
@@ -882,7 +882,7 @@
                             reviewerData.authors.forEach(author => {
                                 result[hwName].push({
                                     ...assignment,
-                                    Author_Name: author
+                                    Author: author
                                 });
                             });
                         } else {

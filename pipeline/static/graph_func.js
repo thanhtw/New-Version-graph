@@ -34,7 +34,7 @@ export function calculateReviewerLabelAverages(assignments) {
 
     // 計算每個 Reviewer 的 Label 總和與數量
     assignments.forEach(assignment => {
-        let reviewer = assignment.Reviewer_Name?.trim().toUpperCase();  
+        let reviewer = assignment.Reviewer?.trim().toUpperCase();  
         let rounds = assignment.Round;  
 
         if (!Array.isArray(rounds)) {
@@ -57,7 +57,7 @@ export function calculateReviewerLabelAverages(assignments) {
 
     // 計算平均值，並存回 assignments
     assignments.forEach(assignment => {
-        let reviewer = assignment.Reviewer_Name?.trim().toUpperCase();
+        let reviewer = assignment.Reviewer?.trim().toUpperCase();
         if (reviewerStats[reviewer] && reviewerStats[reviewer].count > 0) {
             assignment.avgLabel = reviewerStats[reviewer].totalLabel / reviewerStats[reviewer].count;
         } else {
@@ -88,188 +88,6 @@ export function getAvgLabelQuality(rounds) {
     return Math.max(0, Math.min(1, avgLabelQuality)); // 確保範圍 0~1
 }
 
-// export function drawReviewGraph(recordData) {
-//     if (!recordData || recordData.length === 0) {
-//         console.error("No records available to draw graph");
-//         return;
-//     }
-
-//     // **先篩選出 Assignment === "HW1" 的資料**
-//     const filteredData = recordData.filter(record => record.Assignment === "HW1");
-
-//     if (filteredData.length === 0) {
-//         console.warn("⚠️ 沒有找到 HW1 的資料");
-//         return;
-//     }
-
-//     var container = document.getElementById("reviewNetwork");
-//     container.innerHTML = ""; // 清空舊的圖表，避免重複
-
-//     var nodes = new vis.DataSet();
-//     var edges = new vis.DataSet();
-//     var userNodes = {};
-//     var existingEdges = new Set(); // 用來追蹤已加入的邊
-
-//     for (let i = 0; i < filteredData.length; i++) {
-//         const record = filteredData[i];
-
-//         if (!record.Reviewer_Name || !record.Author_Name) {
-//             console.warn(`⚠️ 無效資料:`, record);
-//             continue;
-//         }
-
-//         const reviewerId = record.Reviewer_Name.trim().toUpperCase();
-//         const authorId = record.Author_Name.trim().toUpperCase();
-
-//         // **確保 Edge 唯一**
-//         const edgeKey = record.Review_ID ? `RID-${record.Review_ID}` : `${reviewerId}-${authorId}`;
-
-//         // **顏色函數 (現在基於 avgLabelQuality)**
-//         function getNodeColor(avgLabelQuality) {
-//             if (avgLabelQuality >= 0.99) {
-//                 return { background: "#194F75", border: "#194F75", font: { color: "#FFFFFF" } };
-//             } else if (avgLabelQuality > 0.66) {
-//                 return { background: "#4680A9", border: "#4680A9" }; 
-//             } else if (avgLabelQuality > 0.33) {
-//                 return { background: "#89BFE5", border: "#89BFE5" }; 
-//             } else {
-//                 return { background: "#CBE9FF", border: "#CBE9FF" };
-//             }
-//         }
-
-//         // **Node Size 根據 avgLabel**
-//         function getNodeSize(avgLabel) {
-//             return 30 + Math.max(0, Math.min(1, avgLabel)) * 40;
-//         }
-
-//         // 取得 Reviewer 的 avgLabel 和 avgLabelQuality
-//         let reviewerAvgLabel = record.avgLabel || 0;
-//         let reviewerAvgLabelQuality = getAvgLabelQuality(record.Round);
-//         let reviewerColor = getNodeColor(reviewerAvgLabelQuality);
-//         let reviewerSize = getNodeSize(reviewerAvgLabel);
-
-//         let authorAvgLabel = record.avgLabel || 0;
-//         let authorAvgLabelQuality = getAvgLabelQuality(record.Round);
-//         let authorColor = getNodeColor(authorAvgLabelQuality);
-//         let authorSize = getNodeSize(authorAvgLabel);
-
-//         // **建立 Reviewer Node**
-//         if (!userNodes[reviewerId]) {
-//             userNodes[reviewerId] = {
-//                 id: reviewerId,
-//                 label: reviewerId,
-//                 value: reviewerSize, 
-//                 shape: "circle", 
-//                 color: {
-//                     background: reviewerColor.background,
-//                     border: reviewerColor.border
-//                 },
-//                 font: reviewerColor.font || {} 
-//             };
-//             nodes.add(userNodes[reviewerId]);
-//         }
-
-//         // **建立 Author Node**
-//         if (!userNodes[authorId]) {
-//             userNodes[authorId] = {
-//                 id: authorId,
-//                 label: authorId,
-//                 value: authorSize,
-//                 shape: "circle", 
-//                 color: {
-//                     background: authorColor.background,
-//                     border: authorColor.border
-//                 },
-//                 font: authorColor.font || {}
-//             };
-//             nodes.add(userNodes[authorId]);
-//         }
-
-//         // **建立 Edge**
-//         if (!existingEdges.has(edgeKey)) {
-//             console.log("🔍 record.Round 前 10 筆:", record.Round.slice(0, 10));  
-
-//             // Edge 顏色判斷
-//             let hasLowScoreEmptyFeedback = false;
-
-//             if (Array.isArray(record.Round)) {
-//                 for (let round of record.Round) {
-//                     let scoreValue = Number(round.Score);
-//                     let feedbackValue = round.Feedback;
-
-//                     console.log(`🎯 檢查 Score=${scoreValue}, Feedback='${feedbackValue}'`);
-                    
-//                     let isFeedbackEmpty = !feedbackValue || (typeof feedbackValue === "string" && feedbackValue.trim() === "");
-//                     console.log(isFeedbackEmpty)
-
-//                     if (scoreValue === 2 && isFeedbackEmpty) {
-//                         console.log(`⚠️ 符合條件，Score=2 且 Feedback為空白:`, round);
-//                         hasLowScoreEmptyFeedback = true;
-//                         break;
-//                     }
-//                 }
-//             } else {
-//                 console.warn(`⚠️ record.Round 不是陣列，可能有問題:`, record.Round);
-//             }
-
-//             // ✅ Edge 設定
-//             let edgeColor = hasLowScoreEmptyFeedback ? "#FF0000" : "#199FD8";
-//             let isDashed = hasLowScoreEmptyFeedback;
-
-//             // 建立 Edge
-//             edges.add({
-//                 id: edgeKey,
-//                 from: reviewerId,
-//                 to: authorId,
-//                 arrows: "to",
-//                 width: 2,
-//                 color: { color: edgeColor },  
-//                 dashes: isDashed  
-//             });
-
-//             existingEdges.add(edgeKey);
-//         }
-//     }
-
-//     var data = { nodes: nodes, edges: edges };
-
-//     var options = {
-//         nodes: {
-//             scaling: { 
-//                 min: 30, 
-//                 max: 200,
-//                 label: {
-//                     min: 15,
-//                     max: 40
-//                 }
-//             },
-//         },
-//         edges: {
-//             physics: true,
-//             length: 400,
-//         },
-//         physics: {
-//             barnesHut: {                                                                        
-//                 gravitationalConstant: -2000,
-//                 centralGravity: 0.3,
-//                 springLength: 200,
-//                 springConstant: 0.04,
-//                 damping: 0.09,
-//             },
-//             minVelocity: 0.75,
-//         },
-//     };
-
-//     console.log("🔍 Final nodes dataset:", nodes.get());
-//     new vis.Network(container, data, options);
-//     const network = new vis.Network(container, data, options);
-//     network.redraw();
-// }
-
-// graph_func.js
-// graph_Sumfunc.js
-
-
 export function processReviewerData(rawData, mode = "all", hwNames = ['HW4']) {
     const nodesMap = new Map();
     const links = [];
@@ -280,8 +98,8 @@ export function processReviewerData(rawData, mode = "all", hwNames = ['HW4']) {
     hwNames.forEach(hwName => {
         const hwAssignments = rawData[hwName] || [];
         hwAssignments.forEach(assignment => {
-            const authorId = assignment.Author_Name;
-            const reviewerId = assignment.Reviewer_Name;
+            const authorId = assignment.Author;
+            const reviewerId = assignment.Reviewer;
             const rounds = Array.isArray(assignment.Round) ? assignment.Round : [];
 
             // 初始化或取得節點
@@ -526,7 +344,7 @@ export function generateAllLabelsGraph(rawData, hwName = ['HW1']) {
                 const selectedHWs = Array.from(document.getElementById('hw-select').selectedOptions)
                                         .map(opt => opt.value);
                 const reviewerRecords = selectedHWs.flatMap(hwName => 
-                    rawData[hwName]?.filter(a => a.Reviewer_Name === nodeId) || []
+                    rawData[hwName]?.filter(a => a.Reviewer === nodeId) || []
                 );
                 
                 console.log("選擇的作業:", selectedHWs);

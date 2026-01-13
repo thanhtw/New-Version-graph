@@ -377,15 +377,38 @@ def run_pipeline_async(filename: str, use_ml: bool, hw_start: int, hw_end: int):
                 str(json_final_path)
             )
         
+        # Step 4: Score-Review Correlation Analysis
+        pipeline_status["step"] = 4
+        pipeline_status["message"] = "Step 4: Running score-review correlation analysis..."
+        print(f"\n{'='*50}")
+        print("Step 4: Score-Review Correlation Analysis")
+        print(f"{'='*50}")
+        
+        step4_stats = None
+        try:
+            from score_review_analysis import generate_analysis_report
+            analysis_report = generate_analysis_report()
+            if analysis_report and 'error' not in analysis_report:
+                step4_stats = {
+                    "total_students": analysis_report.get('summary', {}).get('total_students', 0),
+                    "total_reviews": analysis_report.get('summary', {}).get('total_reviews_given', 0),
+                    "analysis_file": str(OUTPUT_DIR / "score_review_analysis.json")
+                }
+                print(f"Analysis completed: {step4_stats['total_students']} students, {step4_stats['total_reviews']} reviews")
+            else:
+                print("Score analysis skipped (no score data or error)")
+        except Exception as e:
+            print(f"Score-review analysis skipped: {e}")
        
         # Complete
-        pipeline_status["step"] = 4
+        pipeline_status["step"] = 5
         pipeline_status["message"] = "Pipeline completed successfully!"
         pipeline_status["running"] = False
         pipeline_status["result"] = {
             "step1": step1_stats,
             "step2": step2_stats,
             "step3": step3_stats,
+            "step4": step4_stats,
             "output_file": str(json_final_path)
         }
         
