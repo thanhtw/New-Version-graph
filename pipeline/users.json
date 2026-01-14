@@ -27,6 +27,15 @@
       "password": "thomas123",
       "name": "Thomas",
       "role": "user"
+    },
+    {
+      "id": "thomas1",
+      "username": "thomas1",
+      "password": "thomas123",
+      "name": "Thomas",
+      "email": "",
+      "role": "user",
+      "created_at": "2026-01-14 11:22:40"
     }
   ]
 }

@@ -72,6 +72,42 @@ def authenticate_user(username: str, password: str):
     return None
 
 
+def register_user(name: str, username: str, password: str, email: str = "") -> dict:
+    """Register a new user.
+    
+    Returns:
+        dict with 'success' boolean and 'message' string
+    """
+    users = load_users()
+    
+    # Check if username already exists
+    for user in users:
+        if user['username'].lower() == username.lower():
+            return {"success": False, "message": "Username already exists"}
+    
+    # Generate unique user ID
+    user_id = username.lower().replace(' ', '_')
+    
+    # Create new user
+    new_user = {
+        "id": user_id,
+        "username": username,
+        "password": password,
+        "name": name,
+        "email": email,
+        "role": "user",
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    users.append(new_user)
+    save_users(users)
+    
+    # Create user directories
+    get_user_dirs(user_id)
+    
+    return {"success": True, "message": "User registered successfully", "user_id": user_id}
+
+
 def create_session(user: dict) -> str:
     """Create a new session for user and return token."""
     token = str(uuid.uuid4())
@@ -175,6 +211,10 @@ class PipelineHandler(SimpleHTTPRequestHandler):
             self.serve_login()
             return
         
+        if path == '/register' or path == '/register.html':
+            self.serve_register()
+            return
+        
         # API routes
         if path == '/api/check-session':
             self.handle_check_session()
@@ -233,6 +273,11 @@ class PipelineHandler(SimpleHTTPRequestHandler):
             self.handle_login()
             return
         
+        # Register doesn't require auth
+        if path == '/api/register':
+            self.handle_register()
+            return
+        
         # All other POST routes require auth
         user = self.get_current_user()
         if not user:
@@ -257,6 +302,18 @@ class PipelineHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(f.read())
         else:
             self.send_error(404, "login.html not found")
+    
+    def serve_register(self):
+        """Serve the registration page."""
+        html_path = PIPELINE_DIR / "register.html"
+        if html_path.exists():
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+            with open(html_path, 'rb') as f:
+                self.wfile.write(f.read())
+        else:
+            self.send_error(404, "register.html not found")
     
     def handle_login(self):
         """Handle login POST request."""
@@ -295,6 +352,59 @@ class PipelineHandler(SimpleHTTPRequestHandler):
                     "success": False,
                     "message": "Invalid username or password"
                 }, 401)
+                
+        except Exception as e:
+            self.send_json_response({"success": False, "message": str(e)}, 500)
+    
+    def handle_register(self):
+        """Handle user registration POST request."""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body) if body else {}
+            
+            name = data.get('name', '').strip()
+            username = data.get('username', '').strip()
+            password = data.get('password', '')
+            email = data.get('email', '').strip()
+            
+            # Validation
+            if not name or len(name) < 2:
+                self.send_json_response({
+                    "success": False,
+                    "message": "Name must be at least 2 characters"
+                }, 400)
+                return
+            
+            if not username or len(username) < 3 or len(username) > 20:
+                self.send_json_response({
+                    "success": False,
+                    "message": "Username must be 3-20 characters"
+                }, 400)
+                return
+            
+            import re
+            if not re.match(r'^[a-zA-Z0-9_]+$', username):
+                self.send_json_response({
+                    "success": False,
+                    "message": "Username can only contain letters, numbers, and underscore"
+                }, 400)
+                return
+            
+            if not password or len(password) < 6:
+                self.send_json_response({
+                    "success": False,
+                    "message": "Password must be at least 6 characters"
+                }, 400)
+                return
+            
+            # Register the user
+            result = register_user(name, username, password, email)
+            
+            if result['success']:
+                self.send_json_response(result, 200)
+            else:
+                self.send_json_response(result, 400)
                 
         except Exception as e:
             self.send_json_response({"success": False, "message": str(e)}, 500)
